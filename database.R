@@ -1,4 +1,4 @@
-install.packages("spatialEco")
+library(sp)
 library(sf)
 library(terra)
 library(raster)
@@ -52,5 +52,18 @@ data$SVF_W<- data$SVF_1 / 4
 data$city <- "Munich"
 data$treeID<- data$ID
 
-nutzung<-vect("C:/Users/ang58gl/Documents/Data/Nutzung.shp")
+data<-st_as_sf(data)
+
+nutzung<-st_read("C:/Users/ang58gl/Documents/Data/Nutzung.shp")
+nutzung <- st_transform(nutzung, CRS("+init=epsg:32632"))
+
+data<-st_join(data, nutzung, join=st_intersects, left=FALSE)
+head(data)
+
+plot(data)
+
+
+################################################################################
+#                             Height
+################################################################################
 
