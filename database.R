@@ -1,4 +1,5 @@
-install.packages("pacman")
+
+install.packages("exactextractr")
 library(sp)
 library(sf)
 library(terra)
@@ -69,9 +70,9 @@ data<-st_join(data, nutzung, join=st_intersects, left=FALSE)
 ################################################################################
 
 trees_chm<-rast("D:/nDSM_Muc.tif")
-pct <- function(x, p=0.90, na.rm = TRUE) { quantile(x, p, na.rm = na.rm) }
+pcth <- function(x, p=0.90, na.rm = TRUE) { quantile(x, p, na.rm = na.rm) }
 
-merged_trees$height_90 <-extract(trees_chm, merged_trees, fun=pct)[2]
+merged_trees$height_90 <-extract(trees_chm, merged_trees, fun=pcth)[2]
 
 
 ################################################################################
@@ -81,64 +82,86 @@ merged_trees$height_90 <-extract(trees_chm, merged_trees, fun=pct)[2]
 # Create centroids
 centroids <- st_centroid(merged_trees)
 
-# Select tree Id (to do loop afterwards
-TReeID <- 3
+# Count total of shapes
+TotalTrees <- length(centroids[[1]])
 
-# Duplicate point and move upwards
-newpointUp <- centroids[TReeID,]
-newpointDown <- centroids[TReeID,]
-newpointUp[1,]$geometry[[1]][2] <- newpointUp[1,]$geometry[[1]][2] + 50
-newpointDown[1,]$geometry[[1]][2] <- newpointDown[1,]$geometry[[1]][2] - 50
+# Precompute centroid coordinates
+centroid_coords <- st_coordinates(centroids)
 
-# Define a set of coordinates to create line from the two points
-coordinates <- matrix(c(
-  c(st_coordinates(newpointUp)[1], st_coordinates(newpointDown[1,])[1]),
-  c(st_coordinates(newpointUp)[2], st_coordinates(newpointDown[1,])[2])
-), ncol = 2)
+# Initialize vectors to store results
+min_lengths <- numeric(TotalTrees)
+med_lengths <- numeric(TotalTrees)
+mean_lengths <- numeric(TotalTrees)
+max_lengths <- numeric(TotalTrees)
 
-# Create an sf LineString object
-line <- st_linestring(coordinates) %>% st_sfc() %>% st_set_crs(st_crs(centroids))
+# Create progress bar
+pb <- txtProgressBar(min = 1, max = TotalTrees, style = 3)
 
-# Define rotation function
-rot = function(a) matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2) 
-
-# Create rotated line object
-combined_lines <- line
-
-# Rotate line by 5
-for (i in seq(5, 355, by = 5)) {
+# Loop over all available tree shapes
+for (i in 1:TotalTrees) {
   
-  linerot <- ((line - st_centroid(line)) * rot(deg2rad(i)) + st_centroid(line)) %>%
-    st_sfc() %>% st_set_crs(st_crs(centroids))
+  # Convert polygon into points
+  PolPoints <- st_cast(merged_trees[i,], "POINT")
   
-  # Combine the rotated LINESTRING objects into a single sfc object
-  combined_lines <- st_combine(c(combined_lines, linerot))
+  # Initialize variables to store lengths
+  Lengthvector <- numeric(length(PolPoints[[1]]))
   
+  # Loop over all polygon points to create the lines between centroid and polygon edges
+  for (j in 1:length(PolPoints[[1]])) {
+    # Define a set of coordinates to create line from the two points
+    coordinates <- matrix(c(
+      st_coordinates(PolPoints[j,][1])[1], centroid_coords[i,][1],
+      st_coordinates(PolPoints[j,][1])[2], centroid_coords[i,][2]
+    ), ncol = 2)
+    
+    # Create an sf LineString object
+    line <- st_linestring(coordinates) %>% st_sfc() %>% st_set_crs(st_crs(centroids))
+    
+    # Calculate length of line
+    Length <- st_length(line)
+    
+    # Store the length in the vector
+    Lengthvector[j] <- Length
+  }
+  
+  # Calculate fields from the lines and store them in vectors
+  min_lengths[i] <- round(min(Lengthvector), 2)
+  med_lengths[i] <- round(median(Lengthvector), 2)
+  mean_lengths[i] <- round(mean(Lengthvector), 2)
+  max_lengths[i] <- round(max(Lengthvector), 2)
+  
+  # Increment progress bar
+  setTxtProgressBar(pb, i)
+  
+  # Close progress bar when done
+  if(i == TotalTrees){
+    close(pb)
+  }
 }
 
-# Intersect objects
-intersect <- st_intersection(combined_lines, merged_trees[TReeID,])
+# Assign the vectors to the centroids data frame
+centroids$min <- min_lengths
+centroids$med <- med_lengths
+centroids$mean <- mean_lengths
+centroids$max <- max_lengths
 
-#Visual inspection
-mapview(merged_trees) + mapview(centroids) + mapview(intersect) 
+merged_trees$diam<-centroids$mean
 
-# Create a new vector
-Lengthvector <- vector()
+################################################################################
+#                              DBH
+################################################################################
 
-for(i in 1:length(intersect[[1]])){
-  TemporalLIne <- st_linestring(intersect[[1]][[i]]) %>% st_sfc() %>% st_set_crs(st_crs(centroids))
-  Length <- st_length(TemporalLIne)
-  Lengthvector <- c(Lengthvector,c(Length))
-}
+ifelse( merged_trees$genus = 1, merged_trees$dbh = exp(0.54 * log(merged_trees$ws_area) + 0.83 * log(merged_trees$height_90)- 0.09 * log(merged_trees$ws_area) * log(merged_trees$height_90)+0,12))
 
-# Convert vector to dataframe 
-LengthDF <- data.frame(Length = Lengthvector)
+################################################################################
+#                              coordinates
+################################################################################
 
-# Plot geom density
-ggplot(LengthDF, aes(x=Length)) +
-  geom_density(aes(fill = "red"), color = "black", alpha=0.3, lwd = .5, show.legend = F) +
-  geom_vline(aes(color=paste0("Mean:",   round(mean(Lengthvector),2)) , xintercept=mean(Lengthvector)), linetype="solid",  size=1.0, show.legend = NA)+
-  geom_vline(aes(color=paste0("Median:",   round(median(Lengthvector),2)) , xintercept=median(Lengthvector)), linetype="solid",  size=1.0, show.legend = NA)+
-  scale_x_continuous(expand = c(0,0)) +
-  scale_y_continuous(expand = c(0,0)) +
-  labs(color = "Stats")
+data<-st_join(data, merged_trees, join=st_intersects, left=FALSE)
+
+data <- st_transform(data, CRS("+init=epsg:4326"))
+
+data <- data %>% extract(geom, c('lon', 'lat', 'Z'), '\\((.*), (.*), (.*)\\)', convert = TRUE)
+
+input<- data %>%
+  select(City, site_name, lat, lon, ID, SVF_S, SVF_E, SVF_N, SVF_W, X_majority, height_90, diam)
