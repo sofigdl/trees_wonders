@@ -145,13 +145,44 @@ centroids$med <- med_lengths
 centroids$mean <- mean_lengths
 centroids$max <- max_lengths
 
-merged_trees$diam<-centroids$mean
+merged_trees$diam<-(centroids$mean*2)
 
 ################################################################################
 #                              DBH
 ################################################################################
+CPA<-pi * (merged_trees$diam/2)^2
+H<- merged_trees$height_90
 
-ifelse( merged_trees$genus = 1, merged_trees$dbh = exp(0.54 * log(merged_trees$ws_area) + 0.83 * log(merged_trees$height_90)- 0.09 * log(merged_trees$ws_area) * log(merged_trees$height_90)+0,12))
+merged_trees$dbh<- ifelse(merged_trees$genus = 1, (exp(0.54 * log(CPA) + 0.83 * log(H)- 0.09 * log(CPA) * log(H)+0.12)),
+    ifelse(merged_trees$genus = 2, (exp(-0.06 * log(CPA) + 0.16 * log(H)+ 0.16 * log(CPA) * log(H)-1.63)),
+           ifelse(merged_trees$genus = 3, (exp(0.36 * log(CPA) + 0.75 * log(H)-0.11)),
+                  ifelse(merged_trees$genus = 4, (exp(0.31 * log(CPA) + 0.67 * log(H)+0.76 )),
+                         ifelse(merged_trees$genus = 5, (exp(0.36 * log(CPA)+ 0.53 * log(H) + 0.67)),
+                                ifelse(merged_trees$genus = 7, (exp(0.43 * log(CPA)+ 0.42 * log(H) + 0.68)),
+                                       ifelse(merged_trees$genus = 8, (exp(0.20 * log(CPA)+ 0.72 * log(H) + 0.70)),
+                                              ifelse(merged_trees$genus = 11, (exp(0.56 * log(CPA)+ 1.23 * log(H) - 0.11 * log(CPA) * log(H) - 0.74)),
+                                                      ifelse(merged_trees$genus = 13, (exp(0.44 * log(CPA)+ 0.73 * log(H) - 0.04 * log(CPA) * log(H) + 0.26)), NA)))))))))
+
+
+
+merged_trees$dbh_class<-ifelse(merged_trees$dbh<= 10, 10,
+                               ifelse(merged_trees$dbh > 10 & merged_trees$dbh <= 20, 20,
+                                      ifelse(merged_trees$dbh > 20 & merged_trees$dbh <= 30, 30,
+                                             ifelse(merged_trees$dbh > 30 & merged_trees$dbh <= 40, 40,
+                                                    ifelse(merged_trees$dbh > 40 & merged_trees$dbh <= 50, 50,
+                                                           ifelse(merged_trees$dbh > 50 & merged_trees$dbh <= 60, 60,
+                                                                  ifelse(merged_trees$dbh > 60 & merged_trees$dbh <= 70, 70,
+                                                                         ifelse(merged_trees$dbh > 70 & merged_trees$dbh <= 80, 80,
+                                                                                ifelse(merged_trees$dbh > 80 & merged_trees$dbh <= 90, 90,
+                                                                                       ifelse(merged_trees>90, 100, NA))))))))))
+
+
+################################################################################
+#                                extras
+################################################################################
+
+merged_trees$LAI<-0
+merged_trees$competing<-0
 
 ################################################################################
 #                              coordinates
@@ -164,4 +195,4 @@ data <- st_transform(data, CRS("+init=epsg:4326"))
 data <- data %>% extract(geom, c('lon', 'lat', 'Z'), '\\((.*), (.*), (.*)\\)', convert = TRUE)
 
 input<- data %>%
-  select(City, site_name, lat, lon, ID, SVF_S, SVF_E, SVF_N, SVF_W, X_majority, height_90, diam)
+  select(City, site_name, lat, lon, ID, SVF_S, SVF_E, SVF_N, SVF_W, competing, LAI, X_majority, dbh_class, dbh, height_90, diam)
