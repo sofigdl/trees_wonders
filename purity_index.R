@@ -26,8 +26,10 @@ merged_trees <- st_as_sf(merged_trees)
 head(data_trees)
 
 
-fractions<-exactextractr::exact_extract(str_class, str_trees, append_cols=TRUE, fun='frac')
-fractions
+str_fractions<-exactextractr::exact_extract(str_class, str_trees, append_cols=TRUE, fun='frac')
 
-data_trees$total<- data_trees$HISTO_1 %>% + data_trees$HISTO_2 %>% + data_trees$HISTO_3 %>% + data_trees$HISTO_4 %>% + data_trees$HISTO_5 %>% + data_trees$HISTO_7 %>% + data_trees$HISTO_8 %>% + data_trees$HISTO_9 %>% + data_trees$HISTO_10 %>% + data_trees$HISTO_11 %>% + data_trees$HISTO_12 %>% + data_trees$HISTO_13 %>% + data_trees$HISTO_NODATA
+prk_fractions<-exactextractr::exact_extract(prk_class, prk_trees, append_cols=TRUE, fun='frac')
 
+res_fractions<-exactextractr::exact_extract(res_class, res_trees, append_cols=TRUE, fun='frac')
+
+oth_fractions<-exactextractr::exact_extract(oth_class, oth_trees, append_cols=TRUE, fun='frac')
