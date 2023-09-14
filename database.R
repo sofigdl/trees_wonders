@@ -1,11 +1,12 @@
 
-install.packages("exactextractr")
+install.packages("writexl")
 library(dplyr)
 library(sf)
 library(terra)
 library(raster)
 library(pacman)
 library(tidyverse)
+library(writexl)
 # Load Libraries
 pacman::p_load(dplyr,sf,ggplot2, mapview, st, units, REdaS)
 
@@ -216,5 +217,6 @@ input<-data.frame(input)
 names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SVF_S", "SVF_W", "SVF_N", "competing", "LAI", "soil_sealing", "tree_genus", "dbh_class", "dbh", "height", "crown_lenght", "crown_diameter")
 
 write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t1.txt", sep = "\t", row.names = FALSE)
+write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t1.xlsx")
 
 table(merged_trees$genus)
