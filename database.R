@@ -10,8 +10,6 @@ library(writexl)
 # Load Libraries
 pacman::p_load(dplyr,sf,ggplot2, mapview, st, units, REdaS)
 
-
-
 ################################################################################
 #                              Extract genera
 ################################################################################
@@ -85,6 +83,7 @@ merged_trees$height_90 <- (terra::extract(trees_chm, merged_trees, fun=pcth))[2]
 names(merged_trees$height_90)
 
 merged_trees <- st_as_sf(merged_trees)
+
 ################################################################################
 #                              Diameter
 ################################################################################
@@ -158,7 +157,6 @@ centroids$max <- max_lengths
 merged_trees$diam<-(centroids$mean*2)
 
 
-
 ################################################################################
 #                              DBH
 ################################################################################
@@ -198,23 +196,98 @@ merged_trees$LAI<-0
 merged_trees$competing<-0
 merged_trees$soil_sealing <-0
 merged_trees$crown_lenght<-0
+merged_trees$soil_type<-0
+merged_trees$field_capacity<-0
+merged_trees$wilting_point<-0
+merged_trees$rooting_depth<-0
+merged_trees$period<-0
+merged_trees$CO2_concentration<-0
+merged_trees$radiation_Jan<-0
+merged_trees$radiation_Feb<-0
+merged_trees$radiation_Mar<-0
+merged_trees$radiation_Apr<-0
+merged_trees$radiation_May<-0
+merged_trees$radiation_Jun<-0
+merged_trees$radiation_Jul<-0
+merged_trees$radiation_Aug<-0
+merged_trees$radiation_Sep<-0
+merged_trees$radiation_Oct<-0
+merged_trees$radiation_Nov<-0
+merged_trees$radiation_Dez<-0
+merged_trees$temperature_Jan<-0
+merged_trees$temperature_Feb<-0
+merged_trees$temperature_Mar<-0
+merged_trees$temperature_Apr<-0
+merged_trees$temperature_May<-0
+merged_trees$temperature_Jun<-0
+merged_trees$temperature_Jul<-0
+merged_trees$temperature_Aug<-0
+merged_trees$temperature_Sep<-0
+merged_trees$temperature_Oct<-0
+merged_trees$temperature_Nov<-0
+merged_trees$temperature_Dez<-0
+merged_trees$humidity_Jan<-0
+merged_trees$humidity_Feb<-0
+merged_trees$humidity_Mar<-0
+merged_trees$humidity_Apr<-0
+merged_trees$humidity_May<-0
+merged_trees$humidity_Jun<-0
+merged_trees$humidity_Jul<-0
+merged_trees$humidity_Aug<-0
+merged_trees$humidity_Sep<-0
+merged_trees$humidity_Oct<-0
+merged_trees$humidity_Nov<-0
+merged_trees$humidity_Dez<-0
+merged_trees$wind_speed_Jan<-0
+merged_trees$wind_speed_Feb<-0
+merged_trees$wind_speed_Mar<-0
+merged_trees$wind_speed_Apr<-0
+merged_trees$wind_speed_May<-0
+merged_trees$wind_speed_Jun<-0
+merged_trees$wind_speed_Jul<-0
+merged_trees$wind_speed_Aug<-0
+merged_trees$wind_speed_Sep<-0
+merged_trees$wind_speed_Oct<-0
+merged_trees$wind_speed_Nov<-0
+merged_trees$wind_speed_Dez<-0
+merged_trees$precipitation_Jan<-0
+merged_trees$precipitation_Feb<-0
+merged_trees$precipitation_Mar<-0
+merged_trees$precipitation_Apr<-0
+merged_trees$precipitation_May<-0
+merged_trees$precipitation_Jun<-0
+merged_trees$precipitation_Jul<-0
+merged_trees$precipitation_Aug<-0
+merged_trees$precipitation_Sep<-0
+merged_trees$precipitation_Oct<-0
+merged_trees$precipitation_Nov<-0
+merged_trees$precipitation_Dez<-0
+
+
 
 ################################################################################
 #                              coordinates
 ################################################################################
 merged_trees<-st_join(data, merged_trees, join=st_intersects, left=FALSE)
 
-
 merged_trees <- st_transform(merged_trees, CRS("+init=epsg:4326"))
 
 merged_trees <- merged_trees %>% extract(geometry, c('lon', 'lat'), '\\((.*), (.*)\\)', convert = TRUE)
 
 input<- merged_trees %>%
-  dplyr::select(City, site_name, lat, lon, ID,  SVF_E, SVF_S, SVF_W, SVF_N, competing, LAI, soil_sealing, genus, dbh_class, dbh, height_90, crown_lenght, diam.y)
+  dplyr::select(City, site_name, lat, lon, ID,  SVF_E, SVF_S, SVF_W, SVF_N, competing, LAI, soil_sealing, soil_type, field_capacity, wilting_point, rooting_depth, period, CO2_concentration, genus, dbh_class, dbh, height_90, crown_lenght, diam.y, radiation_Jan, 
+                radiation_Feb, radiation_Mar, radiation_Apr, radiation_May, radiation_Jun, radiation_Jul, radiation_Aug, radiation_Sep, radiation_Oct, radiation_Nov, radiation_Dez, temperature_Jan, temperature_Feb, temperature_Mar, temperature_Apr, temperature_May,
+                temperature_Jun, temperature_Jul, temperature_Aug, temperature_Sep, temperature_Oct, temperature_Nov, temperature_Dez, humidity_Jan, humidity_Feb, humidity_Mar, humidity_Apr, humidity_May, humidity_Jun, humidity_Jul, humidity_Aug, humidity_Sep,
+                humidity_Oct, humidity_Nov, humidity_Dez, wind_speed_Jan, wind_speed_Feb, wind_speed_Mar, wind_speed_Apr, wind_speed_May, wind_speed_Jun, wind_speed_Jul, wind_speed_Aug, wind_speed_Sep, wind_speed_Oct, wind_speed_Nov, wind_speed_Dez, precipitation_Jan,
+                precipitation_Feb, precipitation_Mar, precipitation_Apr, precipitation_May, precipitation_Jun, precipitation_Jul, precipitation_Aug, precipitation_Sep, precipitation_Oct, precipitation_Nov, precipitation_Dez)
 
 input<-data.frame(input)
 
-names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SVF_S", "SVF_W", "SVF_N", "competing", "LAI", "soil_sealing", "tree_genus", "dbh_class", "dbh", "height", "crown_lenght", "crown_diameter")
+names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SVF_S", "SVF_W", "SVF_N", "competing", "LAI", "soil_sealing", "soil_type", "field_capacity", "wilting_point", "rooting_depth", "period", "CO2_concentration", "tree_genus", "dbh_class", "dbh", "height", "crown_lenght", "crown_diameter", "radiation_Jan", 
+                 "radiation_Feb", "radiation_Mar", "radiation_Apr", "radiation_May", "radiation_Jun", "radiation_Jul", "radiation_Aug", "radiation_Sep", "radiation_Oct", "radiation_Nov", "radiation_Dez", "temperature_Jan", "temperature_Feb", "temperature_Mar", "temperature_Apr", "temperature_May",
+                 "temperature_Jun", "temperature_Jul", "temperature_Aug", "temperature_Sep", "temperature_Oct", "temperature_Nov", "temperature_Dez", "humidity_Jan", "humidity_Feb", "humidity_Mar", "humidity_Apr", "humidity_May", "humidity_Jun", "humidity_Jul", "humidity_Aug", "humidity_Sep",
+                 "humidity_Oct", "humidity_Nov", "humidity_Dez", "wind_speed_Jan", "wind_speed_Feb, wind_speed_Mar, wind_speed_Apr", "wind_speed_May", "wind_speed_Jun", "wind_speed_Jul", "wind_speed_Aug", "wind_speed_Sep", "wind_speed_Oct", "wind_speed_Nov", "wind_speed_Dez", "precipitation_Jan",
+                 "precipitation_Feb", "precipitation_Mar", "precipitation_Apr", "precipitation_May", "precipitation_Jun", "precipitation_Jul", "precipitation_Aug", "precipitation_Sep", "precipitation_Oct", "precipitation_Nov", "precipitation_Dez")
 
 write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t1.txt", sep = "\t", row.names = FALSE)
 write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t1.xlsx")
