@@ -173,6 +173,9 @@ merged_trees$dbh <- ifelse(merged_trees$genus == 1, (exp(0.54 *log(merged_trees$
                                                      ifelse(merged_trees$genus == 13, (exp(0.44 * log(merged_trees$cpa)+ 0.73 * log(merged_trees$height_90) - 0.04 * log(merged_trees$cpa) * log(merged_trees$height_90) + 0.26)), NA)))))))))
 
 
+merged_trees<- merged_trees %>%
+  filter(dbh >= 2.5)
+
 merged_trees <- merged_trees %>%
   mutate(dbh_class = case_when(
     dbh<= 10 ~ 10,
@@ -196,73 +199,75 @@ merged_trees$LAI<-0
 merged_trees$competing<-0
 merged_trees$soil_sealing <-0
 merged_trees$crown_lenght<-0
-merged_trees$soil_type<-0
-merged_trees$field_capacity<-0
-merged_trees$wilting_point<-0
-merged_trees$rooting_depth<-0
-merged_trees$period<-0
-merged_trees$CO2_concentration<-0
-merged_trees$radiation_Jan<-0
-merged_trees$radiation_Feb<-0
-merged_trees$radiation_Mar<-0
-merged_trees$radiation_Apr<-0
-merged_trees$radiation_May<-0
-merged_trees$radiation_Jun<-0
-merged_trees$radiation_Jul<-0
-merged_trees$radiation_Aug<-0
-merged_trees$radiation_Sep<-0
-merged_trees$radiation_Oct<-0
-merged_trees$radiation_Nov<-0
-merged_trees$radiation_Dez<-0
-merged_trees$temperature_Jan<-0
-merged_trees$temperature_Feb<-0
-merged_trees$temperature_Mar<-0
-merged_trees$temperature_Apr<-0
-merged_trees$temperature_May<-0
-merged_trees$temperature_Jun<-0
-merged_trees$temperature_Jul<-0
-merged_trees$temperature_Aug<-0
-merged_trees$temperature_Sep<-0
-merged_trees$temperature_Oct<-0
-merged_trees$temperature_Nov<-0
-merged_trees$temperature_Dez<-0
-merged_trees$humidity_Jan<-0
-merged_trees$humidity_Feb<-0
-merged_trees$humidity_Mar<-0
-merged_trees$humidity_Apr<-0
-merged_trees$humidity_May<-0
-merged_trees$humidity_Jun<-0
-merged_trees$humidity_Jul<-0
-merged_trees$humidity_Aug<-0
-merged_trees$humidity_Sep<-0
-merged_trees$humidity_Oct<-0
-merged_trees$humidity_Nov<-0
-merged_trees$humidity_Dez<-0
-merged_trees$wind_speed_Jan<-0
-merged_trees$wind_speed_Feb<-0
-merged_trees$wind_speed_Mar<-0
-merged_trees$wind_speed_Apr<-0
-merged_trees$wind_speed_May<-0
-merged_trees$wind_speed_Jun<-0
-merged_trees$wind_speed_Jul<-0
-merged_trees$wind_speed_Aug<-0
-merged_trees$wind_speed_Sep<-0
-merged_trees$wind_speed_Oct<-0
-merged_trees$wind_speed_Nov<-0
-merged_trees$wind_speed_Dez<-0
-merged_trees$precipitation_Jan<-0
-merged_trees$precipitation_Feb<-0
-merged_trees$precipitation_Mar<-0
-merged_trees$precipitation_Apr<-0
-merged_trees$precipitation_May<-0
-merged_trees$precipitation_Jun<-0
-merged_trees$precipitation_Jul<-0
-merged_trees$precipitation_Aug<-0
-merged_trees$precipitation_Sep<-0
-merged_trees$precipitation_Oct<-0
-merged_trees$precipitation_Nov<-0
-merged_trees$precipitation_Dez<-0
-
+merged_trees$soil_type<-"sandy loam"
+merged_trees$field_capacity<-25
+merged_trees$wilting_point<-8
+merged_trees$rooting_depth<-80
+merged_trees$period<-"1991-2020"
+merged_trees$CO2_concentration<-400
+merged_trees$radiation_Jan<-371
+merged_trees$radiation_Feb<-614
+merged_trees$radiation_Mar<-962
+merged_trees$radiation_Apr<-1396
+merged_trees$radiation_May<-1674
+merged_trees$radiation_Jun<-1845
+merged_trees$radiation_Jul<-1855
+merged_trees$radiation_Aug<-1653
+merged_trees$radiation_Sep<-1177
+merged_trees$radiation_Oct<-744
+merged_trees$radiation_Nov<-417
+merged_trees$radiation_Dez<-311
+merged_trees$temperature_Jan<-0.9
+merged_trees$temperature_Feb<-1.9
+merged_trees$temperature_Mar<-5.7
+merged_trees$temperature_Apr<-10.2
+merged_trees$temperature_May<-14.3
+merged_trees$temperature_Jun<-17.8
+merged_trees$temperature_Jul<-19.6
+merged_trees$temperature_Aug<-19.4
+merged_trees$temperature_Sep<-14.7
+merged_trees$temperature_Oct<-10.1
+merged_trees$temperature_Nov<-4.9
+merged_trees$temperature_Dez<-1.8
+merged_trees$humidity_Jan<-80
+merged_trees$humidity_Feb<-76
+merged_trees$humidity_Mar<-71
+merged_trees$humidity_Apr<-65
+merged_trees$humidity_May<-67
+merged_trees$humidity_Jun<-67
+merged_trees$humidity_Jul<-66
+merged_trees$humidity_Aug<-68
+merged_trees$humidity_Sep<-75
+merged_trees$humidity_Oct<-80
+merged_trees$humidity_Nov<-83
+merged_trees$humidity_Dez<-82
+merged_trees$wind_speed_Jan<-2.7
+merged_trees$wind_speed_Feb<-2.7
+merged_trees$wind_speed_Mar<-2.9
+merged_trees$wind_speed_Apr<-2.6
+merged_trees$wind_speed_May<-2.5
+merged_trees$wind_speed_Jun<-2.4
+merged_trees$wind_speed_Jul<-2.5
+merged_trees$wind_speed_Aug<-2.2
+merged_trees$wind_speed_Sep<-2.2
+merged_trees$wind_speed_Oct<-2.3
+merged_trees$wind_speed_Nov<-2.4
+merged_trees$wind_speed_Dez<-2.7
+merged_trees$precipitation_Jan<-51.9
+merged_trees$precipitation_Feb<-45.5
+merged_trees$precipitation_Mar<-61.2
+merged_trees$precipitation_Apr<-56.0
+merged_trees$precipitation_May<-107.0
+merged_trees$precipitation_Jun<-120.9
+merged_trees$precipitation_Jul<-118.9
+merged_trees$precipitation_Aug<-116.5
+merged_trees$precipitation_Sep<-78.1
+merged_trees$precipitation_Oct<-66.9
+merged_trees$precipitation_Nov<-58.4
+merged_trees$precipitation_Dez<-58.5
+merged_trees$irrigation_start<-1
+merged_trees$irrigation_end<-12
+merged_trees$irrigation_amount<-0
 
 
 ################################################################################
@@ -279,15 +284,15 @@ input<- merged_trees %>%
                 radiation_Feb, radiation_Mar, radiation_Apr, radiation_May, radiation_Jun, radiation_Jul, radiation_Aug, radiation_Sep, radiation_Oct, radiation_Nov, radiation_Dez, temperature_Jan, temperature_Feb, temperature_Mar, temperature_Apr, temperature_May,
                 temperature_Jun, temperature_Jul, temperature_Aug, temperature_Sep, temperature_Oct, temperature_Nov, temperature_Dez, humidity_Jan, humidity_Feb, humidity_Mar, humidity_Apr, humidity_May, humidity_Jun, humidity_Jul, humidity_Aug, humidity_Sep,
                 humidity_Oct, humidity_Nov, humidity_Dez, wind_speed_Jan, wind_speed_Feb, wind_speed_Mar, wind_speed_Apr, wind_speed_May, wind_speed_Jun, wind_speed_Jul, wind_speed_Aug, wind_speed_Sep, wind_speed_Oct, wind_speed_Nov, wind_speed_Dez, precipitation_Jan,
-                precipitation_Feb, precipitation_Mar, precipitation_Apr, precipitation_May, precipitation_Jun, precipitation_Jul, precipitation_Aug, precipitation_Sep, precipitation_Oct, precipitation_Nov, precipitation_Dez)
+                precipitation_Feb, precipitation_Mar, precipitation_Apr, precipitation_May, precipitation_Jun, precipitation_Jul, precipitation_Aug, precipitation_Sep, precipitation_Oct, precipitation_Nov, precipitation_Dez, irrigation_start, irrigation_end, irrigation_amount)
 
 input<-data.frame(input)
 
 names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SVF_S", "SVF_W", "SVF_N", "competing", "LAI", "soil_sealing", "soil_type", "field_capacity", "wilting_point", "rooting_depth", "period", "CO2_concentration", "tree_genus", "dbh_class", "dbh", "height", "crown_lenght", "crown_diameter", "radiation_Jan", 
                  "radiation_Feb", "radiation_Mar", "radiation_Apr", "radiation_May", "radiation_Jun", "radiation_Jul", "radiation_Aug", "radiation_Sep", "radiation_Oct", "radiation_Nov", "radiation_Dez", "temperature_Jan", "temperature_Feb", "temperature_Mar", "temperature_Apr", "temperature_May",
                  "temperature_Jun", "temperature_Jul", "temperature_Aug", "temperature_Sep", "temperature_Oct", "temperature_Nov", "temperature_Dez", "humidity_Jan", "humidity_Feb", "humidity_Mar", "humidity_Apr", "humidity_May", "humidity_Jun", "humidity_Jul", "humidity_Aug", "humidity_Sep",
-                 "humidity_Oct", "humidity_Nov", "humidity_Dez", "wind_speed_Jan", "wind_speed_Feb, wind_speed_Mar, wind_speed_Apr", "wind_speed_May", "wind_speed_Jun", "wind_speed_Jul", "wind_speed_Aug", "wind_speed_Sep", "wind_speed_Oct", "wind_speed_Nov", "wind_speed_Dez", "precipitation_Jan",
-                 "precipitation_Feb", "precipitation_Mar", "precipitation_Apr", "precipitation_May", "precipitation_Jun", "precipitation_Jul", "precipitation_Aug", "precipitation_Sep", "precipitation_Oct", "precipitation_Nov", "precipitation_Dez")
+                 "humidity_Oct", "humidity_Nov", "humidity_Dez", "wind_speed_Jan", "wind_speed_Feb", "wind_speed_Mar", "wind_speed_Apr", "wind_speed_May", "wind_speed_Jun", "wind_speed_Jul", "wind_speed_Aug", "wind_speed_Sep", "wind_speed_Oct", "wind_speed_Nov", "wind_speed_Dez", "precipitation_Jan",
+                 "precipitation_Feb", "precipitation_Mar", "precipitation_Apr", "precipitation_May", "precipitation_Jun", "precipitation_Jul", "precipitation_Aug", "precipitation_Sep", "precipitation_Oct", "precipitation_Nov", "precipitation_Dez", "irrigation_start", "irrigation_end", "irrigation_amount")
 
 write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t1.txt", sep = "\t", row.names = FALSE)
 write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t1.xlsx")
