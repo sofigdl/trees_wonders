@@ -57,6 +57,7 @@ writeRaster(mosaic_0922, "D:/Preprocessed/Test_wue/mosaic_20JUL_WU_2.tif", overw
 wu_j20_1<- rast("D:/Preprocessed/Test_wue/mosaic_20JUL_WU_1.tif")
 wu_j20_2<- rast("D:/Preprocessed/Test_wue/mosaic_20JUL_WU_2.tif")
 
+#crop raster to match the extent
 cropped_wu_j20_2 <- crop(wu_j20_2, ext(wu_j20_1))
 
 plot(cropped_wu_j20_2)
@@ -67,10 +68,11 @@ writeRaster(cropped_wu_j20_2, "D:/Preprocessed/Test_wue/cropped_wu_j20_2.tif", o
 
 ############# 5. Estimate Vegetation Indices
 #Load co-registered raster
-mr_s21<- rast("D:/Preprocessed/Test_wue/cor_21SEP_MR.tif")
-#mr_s22<- rast("D:/Preprocessed/Test_wue/cor_22SEP_MR.tif") #the reference and target images did not have enough tie points 
-mr_j19<- rast("D:/Preprocessed/Clipped/clip-19JUL-WV2-middle.tif")
-mr_j19<-resample(mr_j19, mr_s21)
+wu_j20_1<- rast("D:/Preprocessed/Test_wue/mosaic_20JUL_WU_1.tif")
+
+wu_j20_2<- rast("D:/Preprocessed/Test_wue/cor_wu_j20_2.tif")
+
+wu_j20_1<-resample(wu_j20_1, wu_j20_2)
 
 
 #Create the functions for the indices
@@ -83,9 +85,9 @@ ndvi<-function(s){
 }
 
 #apply the ndvi
-ndvi_wu_j20_1<- ndvi(mr_j19)
-ndvi_mrs21<- ndvi(mr_s21)
-#ndvi_mrs22<- ndvi(mr_s22)
+ndvi_wu_j20_1<- ndvi(wu_j20_1)
+ndvi_wu_j20_2<- ndvi(wu_j20_2)
+
 
 #--------------------------------------------------------------------------------
 
@@ -99,8 +101,8 @@ ndre<- function(s){
 }
 
 #apply the evi
-ndre_wu_j20_1<- ndre(mr_j19)
-ndre_mrs21<- ndre(mr_s21)
+ndre_wu_j20_1<- ndre(wu_j20_1)
+ndre_wu_j20_2<- ndre(wu_j20_2)
 #ndre_mrs22<- ndre(mr_s22)
 
 #--------------------------------------------------------------------------------
@@ -115,35 +117,35 @@ rvi<- function(s){
 }
 
 #apply the evi
-RVI_wu_j20_1<- rvi(mr_j19)
-RVI_mrs21<- rvi(mr_s21)
+RVI_wu_j20_1<- rvi(wu_j20_1)
+RVI_wu_j20_2<- rvi(wu_j20_2)
 
 ############# 5.5. Correct errors in the indices
 
-ndvi_mrs21[ndvi_mrs21 > 1]<- NA
-ndvi_mrs21[ndvi_mrs21 < -1]<- NA
+ndvi_wu_j20_2[ndvi_wu_j20_2 > 1]<- NA
+ndvi_wu_j20_2[ndvi_wu_j20_2 < -1]<- NA
 
-ndre_mrs21[ndre_mrs21 > 1]<- NA
-ndre_mrs21[ndre_mrs21 < -1]<- NA
+ndre_wu_j20_2[ndre_wu_j20_2 > 1]<- NA
+ndre_wu_j20_2[ndre_wu_j20_2 < -1]<- NA
 ############# 6. Load and preprocess the other covariates (CHM and LU)
 
 chm<-rast("D:/nDSM_Muc.tif")
-chm<-resample(chm, ndvi_mrs21)
+chm<-resample(chm, ndvi_wu_j20_2)
 plot(chm)
 
-lu_raster<-ndvi_mrs21
-lu<-st_read("C:/Users/ang58gl/Documents/Data/LU_dissolved.shp")
+lu_raster<-ndvi_wu_j20_2
+lu<-st_read("D:/Preprocessed/Test_wue/LU_dissolved.gpkg")
 lu_raster<-rasterize(x=lu, y=lu_raster, field="Cat_pat")
 lu_raster
 plot(lu_raster)
 
 ############# 7. Prepare the ndvi filter
 #Apply vegetation and buildings filter
-j19_ndvi_filter<-ndvi_wu_j20_1>0.3
-s21_ndvi_filter<-ndvi_mrs21>0.3
+j20_1_ndvi_filter<-ndvi_wu_j20_1>0.3
+j20_2_ndvi_filter<-ndvi_wu_j20_2>0.3
 
 #make a filter using pixels that are above the threshold in any date 
-ndvi_filter<-(j19_ndvi_filter+s21_ndvi_filter)>0
+ndvi_filter<-(j20_1_ndvi_filter+j20_2_ndvi_filter)>0
 
 
 ############# 8. Prepare layers for modelling
@@ -151,20 +153,20 @@ ndvi_filter<-(j19_ndvi_filter+s21_ndvi_filter)>0
 #resample
 #chm<-resample(chm, ndvi_wu_j20_1)
 #lu_raster<-resample(lu_raster, ndvi_wu_j20_1)
-#RVI_mrs21<-resample(RVI_mrs21, ndvi_wu_j20_1)
-#ndre_mrs21<-resample(ndre_mrs21, ndvi_wu_j20_1)
-#ndvi_mrs21<-resample(ndvi_mrs21, ndvi_wu_j20_1)
-#mr_s21<-resample(mr_s21, ndvi_wu_j20_1)
+#RVI_wu_j20_2<-resample(RVI_wu_j20_2, ndvi_wu_j20_1)
+#ndre_wu_j20_2<-resample(ndre_wu_j20_2, ndvi_wu_j20_1)
+#ndvi_wu_j20_2<-resample(ndvi_wu_j20_2, ndvi_wu_j20_1)
+#wu_j20_2<-resample(wu_j20_2, ndvi_wu_j20_1)
 
 
 #Change extent
-ext(mr_s21)<-ext(ndvi_wu_j20_1)
-ext(mr_j19)<-ext(ndvi_wu_j20_1)
+ext(wu_j20_2)<-ext(ndvi_wu_j20_1)
+ext(wu_j20_1)<-ext(ndvi_wu_j20_1)
 ext(RVI_wu_j20_1)<-ext(ndvi_wu_j20_1)
-ext(ndre_mrs21)<-ext(ndvi_wu_j20_1)
+ext(ndre_wu_j20_2)<-ext(ndvi_wu_j20_1)
 ext(ndre_wu_j20_1)<-ext(ndvi_wu_j20_1)
-ext(RVI_mrs21)<-ext(ndvi_wu_j20_1)
-ext(ndvi_mrs21)<-ext(ndvi_wu_j20_1)
+ext(RVI_wu_j20_2)<-ext(ndvi_wu_j20_1)
+ext(ndvi_wu_j20_2)<-ext(ndvi_wu_j20_1)
 ext(chm)<-ext(ndvi_wu_j20_1)
 ext(lu_raster)<-ext(ndvi_wu_j20_1)
 
@@ -174,11 +176,11 @@ compareGeom(lu_raster, ndvi_wu_j20_1)
 
 chm1<-chm*ndvi_filter
 lu_raster1<-lu_raster*ndvi_filter
-mr_j191<-mr_j19*ndvi_filter
-mr_s211<-mr_s21*ndvi_filter
+wu_j20_11<-wu_j20_1*ndvi_filter
+wu_j20_21<-wu_j20_2*ndvi_filter
 
 #create raster stack
-input_layers_trees<-rast(list(RVI_wu_j20_1, RVI_mrs21, ndvi_wu_j20_1, ndvi_mrs21, ndre_wu_j20_1, ndre_mrs21, chm1, lu_raster1, mr_j191, mr_s211))
+input_layers_trees<-rast(list(RVI_wu_j20_1, RVI_wu_j20_2, ndvi_wu_j20_1, ndvi_wu_j20_2, ndre_wu_j20_1, ndre_wu_j20_2, chm1, lu_raster1, wu_j20_11, wu_j20_21))
 writeRaster(input_layers, "D:/Preprocessed/Test_wue/covariates.tif")
 
 #check the raster stack
