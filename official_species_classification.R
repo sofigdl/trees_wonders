@@ -51,28 +51,29 @@ names(covariates2)<-  c("RVI_mrj19", "RVI_mrs21", "ndvi_mrj19", "ndvi_mrs21", "n
 TBK_trees_10<-TBK_trees
 TBK_trees_10$species<-ifelse(TBK_trees_10$GATTUNG == 2, "Acer",
                              ifelse(TBK_trees_10$GATTUNG == 52, "Tilia",
-                                    ifelse(TBK_trees_10$GATTUNG == 8,"Carpinus", 
-                                           ifelse(TBK_trees_10$GATTUNG == 20, "Fraxinus",
+                                 #   ifelse(TBK_trees_10$GATTUNG == 8,"Carpinus", 
+                                  #         ifelse(TBK_trees_10$GATTUNG == 20, "Fraxinus",
                                                   ifelse(TBK_trees_10$GATTUNG == 46, "Robinia",
-                                                         ifelse(TBK_trees_10$GATTUNG == 42, "Platanus", 
+                                   #                      ifelse(TBK_trees_10$GATTUNG == 42, "Platanus", 
                                                                 ifelse(TBK_trees_10$GATTUNG == 3, "Aesculus",
-                                                                       ifelse(TBK_trees_10$GATTUNG == 19, "Fagus",
+                                    #                                   ifelse(TBK_trees_10$GATTUNG == 19, "Fagus",
                                                                               ifelse(TBK_trees_10$GATTUNG == 41, "Populus",
-                                                                                     ifelse(TBK_trees_10$GATTUNG == 6, "Betula",
-                                                                                            ifelse(TBK_trees_10$GATTUNG == 45, "Quercus","Other")))))))))))
+                                     #                                                ifelse(TBK_trees_10$GATTUNG == 6, "Betula",
+                                                                                            #ifelse(TBK_trees_10$GATTUNG == 45, "Quercus",
+                                                                                                   "Other")))))
                            
                              
 TBK_trees_10$genus<-ifelse(TBK_trees_10$species == "Tilia", 1,
                             ifelse(TBK_trees_10$species == "Robinia", 2,
-                                    ifelse(TBK_trees_10$species == "Platanus", 3,
+                                   # ifelse(TBK_trees_10$species == "Platanus", 3,
                                           ifelse(TBK_trees_10$species == "Aesculus",4 ,
-                                                ifelse(TBK_trees_10$species == "Acer", 5,
-                                                       ifelse(TBK_trees_10$species == "Fraxinus", 7,
-                                                              ifelse(TBK_trees_10$species == "Betula", 8,
-                                                                     ifelse(TBK_trees_10$species == "Fagus", 9,
-                                                                            ifelse(TBK_trees_10$species == "Populus", 10,
-                                                                                  ifelse(TBK_trees_10$species == "Quercus", 11,
-                                                                                         ifelse(TBK_trees_10$species == "Carpinus", 12, 13)))))))))))
+                                                ifelse(TBK_trees_10$species == "Acer", 6,
+                                                     #  ifelse(TBK_trees_10$species == "Fraxinus", 7,
+                                                            #  ifelse(TBK_trees_10$species == "Betula", 8,
+                                                                #     ifelse(TBK_trees_10$species == "Fagus", 9,
+                                                                            ifelse(TBK_trees_10$species == "Populus", 10, 1)))))
+                                                                             #     ifelse(TBK_trees_10$species == "Quercus", 11,
+                                                                                     #    ifelse(TBK_trees_10$species == "Carpinus", 12, 13)))))))))))
 
 
                                                         

@@ -129,23 +129,82 @@ ndre_wu_j20_2[ndre_wu_j20_2 > 1]<- NA
 ndre_wu_j20_2[ndre_wu_j20_2 < -1]<- NA
 ############# 6. Load and preprocess the other covariates (CHM and LU)
 
-chm<-rast("D:/nDSM_Muc.tif")
+chm<-rast("D:/Ancillary_data_Wue/merged_chm.tif")
+#crop raster to match the extent
+chm<-project(chm, crs(wu_j20_1))
+
+chm <- crop(chm, ext(wu_j20_1))
+
 chm<-resample(chm, ndvi_wu_j20_2)
 plot(chm)
 
 lu_raster<-ndvi_wu_j20_2
 lu<-st_read("D:/Preprocessed/Test_wue/LU_dissolved.gpkg")
+lu<-st_transform(lu, crs = crs(chm))
 lu_raster<-rasterize(x=lu, y=lu_raster, field="Cat_pat")
+
 lu_raster
+
 plot(lu_raster)
 
-############# 7. Prepare the ndvi filter
+############# 7. Prepare the ndvi filter for the vegetation classification
+
 #Apply vegetation and buildings filter
 j20_1_ndvi_filter<-ndvi_wu_j20_1>0.3
 j20_2_ndvi_filter<-ndvi_wu_j20_2>0.3
 
 #make a filter using pixels that are above the threshold in any date 
 ndvi_filter<-(j20_1_ndvi_filter+j20_2_ndvi_filter)>0
+ndvi_filter <- crop(ndvi_filter, ext(wu_j20_1))
+plot(ndvi_filter)
+
+#Write rasters
+writeRaster(ndvi_filter, "D:/Preprocessed/Test_wue/Classifications/1_vegetation_MR.tif", overwrite=TRUE)
+
+############################### Trees classification ###########################
+#height threshold for the canopy height model
+#load the vegetation layer from last step
+ndvi_filter<-raster("D:/Preprocessed/Test_wue/Classifications/1_vegetation_MR.tif")
+
+#Apply a threshold
+chm_filter<- chm > 1.3
+
+plot(chm_filter)
+
+trees<-ndvi_filter*chm_filter
+plot(trees)
+
+#load the symmetrical difference of the buildings for 
+symdif_buildings<-st_read("D:/Ancillary_data_Wue/symdif_wue.gpkg")
+plot(symdif_buildings, add=TRUE)
+#crop out the built-up areas
+trees<-crop(trees, symdif_buildings)
+trees<-terra::mask(trees, symdif_buildings)
+plot(trees)
+
+##Write rasters
+writeRaster(trees, "D:/Classifications/2.1_trees_MR.tif", overwrite=TRUE)
+
+
+########################### Classify the patterns ##############################
+
+
+trees_lu<-raster("D:/Classifications/2.2_trees_MR_nobuildings.tif")
+
+
+# Rasterize the Land Use classes
+
+lu_raster<-rasterize(x=lu, y=trees_lu, field="Cat_pat")
+
+plot(lu_raster)
+
+writeRaster(trees_lu_class, "D:/Classifications/3_Patterns_MR_vf.tif")
+trees_lu_class<-lu_raster*trees_lu
+plot(trees_lu_class)
+
+
+lu_raster<-rast("D:/Classifications/3_Patterns_MR_vf.tif")
+
 
 
 ############# 8. Prepare layers for modelling
@@ -171,7 +230,7 @@ ext(chm)<-ext(ndvi_wu_j20_1)
 ext(lu_raster)<-ext(ndvi_wu_j20_1)
 
 #compare geometries
-compareGeom(lu_raster, ndvi_wu_j20_1)
+compareGeom(wu_j20_2, ndvi_wu_j20_1)
 
 
 chm1<-chm*ndvi_filter
@@ -180,8 +239,8 @@ wu_j20_11<-wu_j20_1*ndvi_filter
 wu_j20_21<-wu_j20_2*ndvi_filter
 
 #create raster stack
-input_layers_trees<-rast(list(RVI_wu_j20_1, RVI_wu_j20_2, ndvi_wu_j20_1, ndvi_wu_j20_2, ndre_wu_j20_1, ndre_wu_j20_2, chm1, lu_raster1, wu_j20_11, wu_j20_21))
-writeRaster(input_layers, "D:/Preprocessed/Test_wue/covariates.tif")
+input_layers_trees<-rast(list( wu_j20_11, wu_j20_21, ndvi_wu_j20_1, ndvi_wu_j20_2, chm1, lu_raster1, wu_j20_11, wu_j20_21))
+writeRaster(input_layers_trees, "D:/Preprocessed/Test_wue/covariates.tif")
 
 #check the raster stack
 plot(input_layers)
@@ -316,89 +375,4 @@ panel.cor <- function (x, y, digits =9, cor_thresh=0.7, col=c("black", "yellow",
 }
 
 scatterplotMatrix(~.| occurrence, data = pa_data, smoother = FALSE, reg.line = FALSE, upper.panel = panel.cor)
-
-
-#################################################################################
-#--------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------
-#Now we can start with the object-based classification
-#We will use the same images from the pixel-based
-#--------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------
-
-
-############# 1. The first step is the tree segmentation. 
-
-#We load and prepare the data 
-input_layers<-rast("D:/Preprocessed/Test_wue/covariates.tif")
-tree_filter<-raster("D:/Classifications/2.2_trees_MR_nobuildings.tif")
-
-plot(tree_filter)
-
-tree_filter<-resample(tree_filter, input_layers)
-
-#Filter the images to classify vegetation
-input_layers_masked<-mask(input_layers, tree_filter)
-
-
-writeRaster(covariates_smoothed,"D:/Segments/lidR_data/smoothed_cov.tif")
-writeRaster(input_layers_masked, "D:/Segments/lidR_data/cov_masked.tif")
-
-
-# We will use the lidR package for that   
-
-kernel <- matrix(1,3,3)
-
-covariates_smoothed <- terra::focal(input_layers_masked, w = kernel, fun = median, na.rm = TRUE)
-
-
-#We reload the data manually because locate_trees is not working
-
-#-------------------------------------------------------------------------------
-chm <- raster("D:/nDSM_Muc.tif")
-chm <- resample(chm, tree_filter)
-chm <- mask(chm, tree_filter)
-chm <- readAll(chm)
-#writeRaster(chm, "D:/Preprocessed/chm.tif")
-#Detect trees
-
-ttops_covariates<-locate_trees(chm, lmf(ws=7, hmin=3, shape="circular"))
-
-#Plot the trees 
-par(mfrow=c(1,2))
-col<- height.colors(50)
-plot(chm, main= "Covariates", col=col); plot(sf::st_geometry(ttops_covariates), add=T, pch=3)
-#plot(covariates_smoothed, main= "Covariates smoothed", col=col); plot(sf::st_geometry(ttops_covariates_smoothed), add=T, pch=3)
-
-#segment trees
-algo<-dalponte2016(chm, ttops_covariates,   th_tree = 2,
-                   th_seed = 0.45,
-                   th_cr = 0.55,
-                   max_cr = 15)
-crowns<-algo()
-
-plot(crowns, col=pastel.colors(200))
-
-writeRaster(crowns, "D:/Segments/lidR_data/crowns_3.tif")
-
-#---------------------------------------------------------------
-
-crowns_waters<-watershed(chm)()
-writeRaster(crowns, "D:/Segments/lidR_data/crown_watershed_1.tif")
-
-#---------------------------------------------------------------
-
-silva<-silva2016(chm, ttops_covariates, max_cr_factor = 0.5, exclusion = 0.3)
-silva_crowns<-silva()
-
-plot(silva_crowns, col=pastel.colors(200))
-writeRaster(silva_crowns, "D:/Segments/lidR_data/silva_crowns_3.tif")
-
-write.csv(ttops_covariates, "D:/Segments/lidR_data/treetops.csv")
-
-
-# We smooth the polygons in QGIS and filter the ones with areas smaller than 2 sqm
-
-############# 2. We extract zonal statistics from our covariates
-
 

@@ -162,15 +162,18 @@ merged_trees$diam<-(centroids$mean*2)
 ################################################################################
 merged_trees$cpa<-pi*(merged_trees$diam/2)^2
 
-merged_trees$dbh <- ifelse(merged_trees$genus == 1, (exp(0.54 *log(merged_trees$cpa)+ 0.83 * log(merged_trees$height_90)- 0.09 * log(merged_trees$cpa) * log(merged_trees$height_90)+0.12)),
-    ifelse(merged_trees$genus == 2, (exp(-0.06 * log(merged_trees$cpa) + 0.16 * log(merged_trees$height_90)+ 0.16 * log(merged_trees$cpa) * log(merged_trees$height_90)-1.63)),
-          ifelse(merged_trees$genus == 3, (exp(0.36 * log(merged_trees$cpa) + 0.75 * log(merged_trees$height_90)-0.11)),
-                  ifelse(merged_trees$genus == 4, (exp(0.31 * log(merged_trees$cpa) + 0.67 * log(merged_trees$height_90)+0.76 )),
-                         ifelse(merged_trees$genus == 5, (exp(0.36 * log(merged_trees$cpa)+ 0.53 * log(merged_trees$height_90) + 0.67)),
-                                ifelse(merged_trees$genus == 7, (exp(0.43 * log(merged_trees$cpa)+ 0.42 * log(merged_trees$height_90) + 0.68)),
-                                       ifelse(merged_trees$genus == 8, (exp(0.20 * log(merged_trees$cpa)+ 0.72 * log(merged_trees$height_90) + 0.70)),
-                                              ifelse(merged_trees$genus == 11, (exp(0.56 * log(merged_trees$cpa)+ 1.23 * log(merged_trees$height_90) - 0.11 * log(merged_trees$cpa) * log(merged_trees$height_90) - 0.74)), 
-                                                     ifelse(merged_trees$genus == 13, (exp(0.44 * log(merged_trees$cpa)+ 0.73 * log(merged_trees$height_90) - 0.04 * log(merged_trees$cpa) * log(merged_trees$height_90) + 0.26)), NA)))))))))
+merged_trees$dbh <- 
+  
+  
+  #ifelse(merged_trees$genus == 1, (exp(0.54 *log(merged_trees$cpa)+ 0.83 * log(merged_trees$height_90)- 0.09 * log(merged_trees$cpa) * log(merged_trees$height_90)+0.12)),
+    #ifelse(merged_trees$genus == 2, (exp(-0.06 * log(merged_trees$cpa) + 0.16 * log(merged_trees$height_90)+ 0.16 * log(merged_trees$cpa) * log(merged_trees$height_90)-1.63)),
+          #ifelse(merged_trees$genus == 3, (exp(0.36 * log(merged_trees$cpa) + 0.75 * log(merged_trees$height_90)-0.11)),
+                 # ifelse(merged_trees$genus == 4, (exp(0.31 * log(merged_trees$cpa) + 0.67 * log(merged_trees$height_90)+0.76 )),
+                        # ifelse(merged_trees$genus == 5, (exp(0.36 * log(merged_trees$cpa)+ 0.53 * log(merged_trees$height_90) + 0.67)),
+                              #  ifelse(merged_trees$genus == 7, (exp(0.43 * log(merged_trees$cpa)+ 0.42 * log(merged_trees$height_90) + 0.68)),
+                                      # ifelse(merged_trees$genus == 8, (exp(0.20 * log(merged_trees$cpa)+ 0.72 * log(merged_trees$height_90) + 0.70)),
+                                             # ifelse(merged_trees$genus == 11, (exp(0.56 * log(merged_trees$cpa)+ 1.23 * log(merged_trees$height_90) - 0.11 * log(merged_trees$cpa) * log(merged_trees$height_90) - 0.74)), 
+                                                    # ifelse(merged_trees$genus == 13, (exp(0.44 * log(merged_trees$cpa)+ 0.73 * log(merged_trees$height_90) - 0.04 * log(merged_trees$cpa) * log(merged_trees$height_90) + 0.26)), NA)))))))))
 
 
 merged_trees<- merged_trees %>%
