@@ -120,7 +120,7 @@ rfmodel_10_st
 
 #Prediction
 pred_rf_10_st<-predict(covariates2, rfmodel_10_st, 
-                       filename = "D:/Classifications/Escalonada/RF/rf_11_st_oficial.tif",
+                       filename = "D:/Classifications/Escalonada/RF/rf_12_st_oficial.tif",
                        format ="GTiff",
                        overwrite=TRUE)
 
@@ -176,7 +176,7 @@ rfmodel_10_prk
 
 #Prediction
 pred_rf_10_prk<-predict(covariates2, rfmodel_10_prk, 
-                        filename = "D:/Classifications/Escalonada/RF/rf_11_prk_oficial.tif",
+                        filename = "D:/Classifications/Escalonada/RF/rf_12_prk_oficial.tif",
                         format ="GTiff",
                         overwrite=TRUE)
 
@@ -231,7 +231,7 @@ rfmodel_10_resi
 
 #Prediction
 pred_rf_10_resi<-predict(covariates2, rfmodel_10_resi, 
-                         filename = "D:/Classifications/Escalonada/RF/rf_11_resi_oficial.tif",
+                         filename = "D:/Classifications/Escalonada/RF/rf_12_resi_oficial.tif",
                          format ="GTiff",
                          overwrite=TRUE)
 
@@ -287,7 +287,7 @@ rfmodel_10_oth
 
 #Prediction
 pred_rf_10_oth<-predict(covariates2, rfmodel_10_oth, 
-                        filename = "D:/Classifications/Escalonada/RF/rf_11_oth_oficial_2.tif",
+                        filename = "D:/Classifications/Escalonada/RF/rf_12_oth_oficial_2.tif",
                         format ="GTiff",
                         overwrite=TRUE)
 
