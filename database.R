@@ -20,10 +20,10 @@ prk_trees<-vect("D:/Tree_data_test/Test1/Class_park_t1.gpkg")
 res_trees<-vect("D:/Tree_data_test/Test1/Class_resi_t1.gpkg")
 oth_trees<-vect("D:/Tree_data_test/Test1/Class_other_t1.gpkg")
 
-str_class<-rast("D:/Classifications/Escalonada/RF/rf_12_st_oficial.tif")
-prk_class<-rast("D:/Classifications/Escalonada/RF/rf_12_prk_oficial.tif")
-res_class<-rast("D:/Classifications/Escalonada/RF/rf_12_resi_oficial.tif")
-oth_class<-rast("D:/Classifications/Escalonada/RF/rf_12_oth_oficial_2.tif")
+str_class<-rast("D:/Classifications/Escalonada/RF/rf_12_st_oficial_v7.tif")
+prk_class<-rast("D:/Classifications/Escalonada/RF/rf_12_prk_oficial_v7.tif")
+res_class<-rast("D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v7.tif")
+oth_class<-rast("D:/Classifications/Escalonada/RF/rf_12_oth_oficial_v7.tif")
 
 str_trees$genus <- (terra::extract(str_class, str_trees, fun="modal", na.rm=TRUE))[2]
 prk_trees$genus <- (terra::extract(prk_class, prk_trees, fun="modal", na.rm=TRUE))[2]
@@ -166,7 +166,8 @@ merged_trees$dbh <-  ifelse(merged_trees$genus == 1,(exp(0.850240949 + 0.5351030
                             ifelse(merged_trees$genus == 2, (exp(0.130836553 + 0.798783592*log(merged_trees$height_90) + 0.319621277*log(merged_trees$cpa))),
                                    ifelse(merged_trees$genus == 4, (exp(0.865043405 + 0.524457333*log(merged_trees$height_90) + 0.376979042*log(merged_trees$cpa))),
                                           ifelse(merged_trees$genus == 6, (exp(0.638550037 + 0.536615182*log(merged_trees$height_90) + 0.362004299*log(merged_trees$cpa))),
-                                                 ifelse(merged_trees$genus == 10, (exp(-0.194552782 + 0.963358572 *log(merged_trees$height_90) + 0.328558707*log(merged_trees$cpa))),9999)))))
+                                                 ifelse(merged_trees$genus == 7, (exp(0.595540029 + 0.506617938*log(merged_trees$height_90) + 0.398067451*log(merged_trees$cpa))),
+                                                        ifelse(merged_trees$genus == 10, (exp(-0.194552782 + 0.963358572 *log(merged_trees$height_90) + 0.328558707*log(merged_trees$cpa))),9999))))))
 
 
   #ifelse(merged_trees$genus == 1, (exp(0.54 *log(merged_trees$cpa)+ 0.83 * log(merged_trees$height_90)- 0.09 * log(merged_trees$cpa) * log(merged_trees$height_90)+0.12)),
@@ -206,7 +207,8 @@ merged_trees$crown_lenght<-  ifelse(merged_trees$genus == 1,(exp(-0.950159509 + 
                             ifelse(merged_trees$genus == 2, (exp(-1.04235872 + 1.157660627*log(merged_trees$height_90) + 0.0572923*log(merged_trees$cpa))),
                                    ifelse(merged_trees$genus == 4, (exp(-0.87803219 + 1.148279131*log(merged_trees$height_90) + 0.050911022*log(merged_trees$cpa))),
                                           ifelse(merged_trees$genus == 6, (exp(-0.843688213 + 1.123293846*log(merged_trees$height_90) + 0.055790862*log(merged_trees$cpa))),
-                                                 ifelse(merged_trees$genus == 10, (exp( 0.910051812*log(merged_trees$height_90) + 0.036639386*log(merged_trees$cpa))), 9999)))))
+                                                 ifelse(merged_trees$genus == 7, (exp(-0.798466663 + 1.128155774*log(merged_trees$height_90) + 0.039361241*log(merged_trees$cpa))),
+                                                        ifelse(merged_trees$genus == 10, (exp( 0.910051812*log(merged_trees$height_90) + 0.036639386*log(merged_trees$cpa))), 9999))))))
 
 
 
@@ -214,7 +216,7 @@ merged_trees$crown_lenght<-  ifelse(merged_trees$genus == 1,(exp(-0.950159509 + 
 #                              soil sealing
 ################################################################################
 
-merged_trees <- merged_trees %>%
+data <- data %>%
   mutate(soil_sealing = case_when(
     nutzart == "Bahnverkehr" ~ 10,
     nutzart == "Fläche besonderer funktionaler Prägung" ~ 20,
@@ -228,7 +230,7 @@ merged_trees <- merged_trees %>%
     nutzart == "Landwirtschaft" ~ 0,
     nutzart == "Moor" ~ 0,
     nutzart == "Platz" ~ 50,
-    nutzart == "Sport-, Freizeit- und Erholungsfläche" ~ 8,
+    nutzart == "Sport-, Freizeit- und Erholungsfläche" ~ 0,
     nutzart == "Stehendes Gewässer" ~ 0,
     nutzart == "Straßenverkehr" ~ 35,
     nutzart == "Tagebau, Grube, Steinbruch" ~ 0,
@@ -342,7 +344,7 @@ names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SV
                  "humidity_Oct", "humidity_Nov", "humidity_Dez", "wind_speed_Jan", "wind_speed_Feb", "wind_speed_Mar", "wind_speed_Apr", "wind_speed_May", "wind_speed_Jun", "wind_speed_Jul", "wind_speed_Aug", "wind_speed_Sep", "wind_speed_Oct", "wind_speed_Nov", "wind_speed_Dez", "precipitation_Jan",
                  "precipitation_Feb", "precipitation_Mar", "precipitation_Apr", "precipitation_May", "precipitation_Jun", "precipitation_Jul", "precipitation_Aug", "precipitation_Sep", "precipitation_Oct", "precipitation_Nov", "precipitation_Dez", "irrigation_start", "irrigation_end", "irrigation_amount")
 
-write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t2.txt", sep = "\t", row.names = FALSE)
-write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t2.xlsx")
+write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t3.txt", sep = "\t", row.names = FALSE)
+write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t3.xlsx")
 
 table(merged_trees$genus)
