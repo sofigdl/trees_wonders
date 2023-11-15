@@ -344,7 +344,7 @@ names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SV
                  "humidity_Oct", "humidity_Nov", "humidity_Dez", "wind_speed_Jan", "wind_speed_Feb", "wind_speed_Mar", "wind_speed_Apr", "wind_speed_May", "wind_speed_Jun", "wind_speed_Jul", "wind_speed_Aug", "wind_speed_Sep", "wind_speed_Oct", "wind_speed_Nov", "wind_speed_Dez", "precipitation_Jan",
                  "precipitation_Feb", "precipitation_Mar", "precipitation_Apr", "precipitation_May", "precipitation_Jun", "precipitation_Jul", "precipitation_Aug", "precipitation_Sep", "precipitation_Oct", "precipitation_Nov", "precipitation_Dez", "irrigation_start", "irrigation_end", "irrigation_amount")
 
-write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t3.txt", sep = "\t", row.names = FALSE)
-write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t3.xlsx")
+write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t4.txt", sep = "\t", row.names = FALSE)
+write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t4.xlsx")
 
 table(merged_trees$genus)

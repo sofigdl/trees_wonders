@@ -52,7 +52,7 @@ TBK_trees_10<-TBK_trees
 TBK_trees_10$species<-ifelse(TBK_trees_10$GATTUNG == 2, "Acer",
                              ifelse(TBK_trees_10$GATTUNG == 52, "Tilia",
                                  #   ifelse(TBK_trees_10$GATTUNG == 8,"Carpinus", 
-                                  #         ifelse(TBK_trees_10$GATTUNG == 20, "Fraxinus",
+                                  #        ifelse(TBK_trees_10$GATTUNG == 20, "Fraxinus",
                                                   ifelse(TBK_trees_10$GATTUNG == 46, "Robinia",
                                    #                      ifelse(TBK_trees_10$GATTUNG == 42, "Platanus", 
                                                                 ifelse(TBK_trees_10$GATTUNG == 3, "Aesculus",
@@ -68,15 +68,15 @@ TBK_trees_10$genus<-ifelse(TBK_trees_10$species == "Tilia", 1,
                                    # ifelse(TBK_trees_10$species == "Platanus", 3,
                                           ifelse(TBK_trees_10$species == "Aesculus",4 ,
                                                 ifelse(TBK_trees_10$species == "Acer", 6,
-                                                     #  ifelse(TBK_trees_10$species == "Fraxinus", 7,
+                                                       #ifelse(TBK_trees_10$species == "Fraxinus", 7,
                                                             #  ifelse(TBK_trees_10$species == "Betula", 8,
                                                                 #     ifelse(TBK_trees_10$species == "Fagus", 9,
-                                                                            ifelse(TBK_trees_10$species == "Populus", 10, 1)))))
-                                                                             #     ifelse(TBK_trees_10$species == "Quercus", 11,
+                                                                            ifelse(TBK_trees_10$species == "Populus", 10, 7)))))
+                                                                             #     ifelse(TBK_trees_10$species == "Quercus", 11,,
                                                                                      #    ifelse(TBK_trees_10$species == "Carpinus", 12, 13)))))))))))
 
 
-                                                        
+                                                    
 # Divide the trees according to the land use
 TBK_trees_streets_10<-subset(TBK_trees_10, lu_raster == 2)
 TBK_trees_parks_10<-subset(TBK_trees_10, lu_raster == 1)
@@ -120,7 +120,7 @@ rfmodel_10_st
 
 #Prediction
 pred_rf_10_st<-predict(covariates2, rfmodel_10_st, 
-                       filename = "D:/Classifications/Escalonada/RF/rf_12_st_oficial.tif",
+                       filename = "D:/Classifications/Escalonada/RF/rf_12_st_oficial_v71.tif",
                        format ="GTiff",
                        overwrite=TRUE)
 
@@ -176,7 +176,7 @@ rfmodel_10_prk
 
 #Prediction
 pred_rf_10_prk<-predict(covariates2, rfmodel_10_prk, 
-                        filename = "D:/Classifications/Escalonada/RF/rf_12_prk_oficial.tif",
+                        filename = "D:/Classifications/Escalonada/RF/rf_12_prk_oficial_v71.tif",
                         format ="GTiff",
                         overwrite=TRUE)
 
@@ -231,7 +231,7 @@ rfmodel_10_resi
 
 #Prediction
 pred_rf_10_resi<-predict(covariates2, rfmodel_10_resi, 
-                         filename = "D:/Classifications/Escalonada/RF/rf_12_resi_oficial.tif",
+                         filename = "D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v71.tif",
                          format ="GTiff",
                          overwrite=TRUE)
 
@@ -287,7 +287,7 @@ rfmodel_10_oth
 
 #Prediction
 pred_rf_10_oth<-predict(covariates2, rfmodel_10_oth, 
-                        filename = "D:/Classifications/Escalonada/RF/rf_12_oth_oficial_2.tif",
+                        filename = "D:/Classifications/Escalonada/RF/rf_12_oth_oficial_v71.tif",
                         format ="GTiff",
                         overwrite=TRUE)
 
