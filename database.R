@@ -20,10 +20,10 @@ prk_trees<-vect("D:/Tree_data_test/Test1/Class_park_t1.gpkg")
 res_trees<-vect("D:/Tree_data_test/Test1/Class_resi_t1.gpkg")
 oth_trees<-vect("D:/Tree_data_test/Test1/Class_other_t1.gpkg")
 
-str_class<-rast("D:/Classifications/Escalonada/RF/rf_12_st_oficial_v7.tif")
-prk_class<-rast("D:/Classifications/Escalonada/RF/rf_12_prk_oficial_v7.tif")
-res_class<-rast("D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v7.tif")
-oth_class<-rast("D:/Classifications/Escalonada/RF/rf_12_oth_oficial_v7.tif")
+str_class<-rast("D:/Classifications/Escalonada/RF/rf_12_st_oficial_v71.tif")
+prk_class<-rast("D:/Classifications/Escalonada/RF/rf_12_prk_oficial_v71.tif")
+res_class<-rast("D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v71.tif")
+oth_class<-rast("D:/Classifications/Escalonada/RF/rf_12_oth_oficial_v71.tif")
 
 str_trees$genus <- (terra::extract(str_class, str_trees, fun="modal", na.rm=TRUE))[2]
 prk_trees$genus <- (terra::extract(prk_class, prk_trees, fun="modal", na.rm=TRUE))[2]

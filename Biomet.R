@@ -67,26 +67,59 @@ ggplot(joined_data, aes(x = Var1, y = density, fill = Var1)) +
   ) +
   scale_fill_brewer(palette = "Set3")
 
+#_______________________________________________________________________________________________________
 
 trees_seg <- st_read("D:/Trees_data/Tree_segments_MR.gpkg")
 
 # Ensure both layers have the same coordinate reference system (CRS)
 trees_seg <- st_transform(trees_seg, st_crs(land_use))
 
-# Intersect the land use and tree polygons
+## Intersect the land use and tree polygons
 intersected <- st_intersection(land_use, trees_seg)
 
 # Calculate the area of each original land use polygon
-land_use$land_use_area <- st_area(land_use)
+land_use <- land_use %>%
+  mutate(land_use_area = st_area(.))
 
 # Calculate the area of each intersected polygon
-intersected$intersected_area <- st_area(intersected)
+intersected <- intersected %>%
+  mutate(intersected_area = st_area(.))
 
+# Group by land use ID and summarize
+land_use_summary <- land_use %>%
+  group_by(nutzart) %>%
+  summarize(total_area = sum(land_use_area))
 
-join_trees <- st_join(intersected, land_use)
+# Group by land use ID and summarize the intersected data
+intersected_summary <- intersected %>%
+  group_by(nutzart) %>%
+  summarize(total_covered_area = sum(intersected_area))
 
-# Calculate the percentage of land use covered by trees
-join_trees$percentage_covered <- (join_trees$intersected_area / join_trees$land_use_area) * 100
+# Merge the summaries
+final_summary <- merge(as.data.frame(land_use_summary), as.data.frame(intersected_summary), by = "nutzart", all = TRUE)
 
-# Display the result
-print(intersected[, c("land_use_id", "percentage_covered")])
+# Calculate the percentage covered
+final_summary <- final_summary %>%
+  mutate(percentage_covered = (total_covered_area / total_area) * 100)
+
+# Convert the percentage_covered column to numeric
+final_summary$percentage_covered <- as.numeric(final_summary$percentage_covered)
+
+final_summary<- final_summary %>%
+  filter(nutzart!="Stehendes Gewässer")
+
+final_summary<- final_summary %>%
+  filter(nutzart!="Friedhof")
+
+# Plot the results
+ggplot(final_summary, aes(x = nutzart, y = percentage_covered, fill = nutzart)) +
+  geom_col() +
+  labs(title = "Tree cover by class", x = "Land use", y = "Tree cover (%)") +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 20),
+    plot.title = element_text(size = 24, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  ) +
+  scale_fill_brewer(palette = "Set3")
