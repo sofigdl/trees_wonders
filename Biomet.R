@@ -102,16 +102,16 @@ trees_landuse<- trees_landuse%>%
 #----------------------------------------------------------------------------------------------------------
 trees_landuse <- trees_landuse %>%
   mutate(LU = case_when(
-    nutzart == "Bahnverkehr" ~ "Other",
+    nutzart == "Bahnverkehr" ~ "Traffic",
     nutzart == "Fläche besonderer funktionaler Prägung" ~ "Industrial",
-    nutzart == "Fläche gemischter Nutzung" ~ "Residential",
-    nutzart == "Gehölz" ~ "Woodland",
+    nutzart == "Fläche gemischter Nutzung" ~ "Mixed",
+    nutzart == "Gehölz" ~ "Recreational",
     nutzart == "Industrie- und Gewerbefläche" ~ "Industrial",
-    nutzart == "Platz" ~ "Other",
-    nutzart == "Sport-, Freizeit- und Erholungsfläche" ~ "Woodland",
-    nutzart == "Straßenverkehr" ~ "Streets",
-    nutzart == "Unland/Vegetationslose Fläche" ~ "Woodland",
-    nutzart == "Weg" ~ "Streets",
+    nutzart == "Platz" ~ "Recreational",
+    nutzart == "Sport-, Freizeit- und Erholungsfläche" ~ "Recreational",
+    nutzart == "Straßenverkehr" ~ "Traffic",
+    nutzart == "Unland/Vegetationslose Fläche" ~ "Recreational",
+    nutzart == "Weg" ~ "Traffic",
     nutzart == "Wohnbaufläche" ~ "Residential",
     TRUE ~ "Other"  # Default for unmatched cases
   ))
@@ -240,12 +240,14 @@ ggplot(lst_by_class, aes(x = LU, y = lst, fill = LU)) +
 #Regression models
 
 # Plot the regression models and store model summaries
-gg<-ggplot(trees_landuse, aes(x = (as.numeric(percentage)), y = X_median, color = LU)) +
+gg<-ggplot(trees_landuse[trees_landuse$LU == "Residential",], aes(x = (as.numeric(percentage)), y = X_median, color = LU)) +
   geom_point() +
   labs(title = "Regression Models for Different Land Use Classes",
        x = "Tree area (%)", y = "Mean LST") +
   stat_poly_line() +
   stat_poly_eq() +
+  scale_x_continuous(limits = c(0,100), expand = c(0,0)) +
+  scale_y_continuous(limits = c(30,50), expand = c(0,0)) +
   theme(
     text = element_text(size = 20),
     plot.title = element_text(size = 24, face = "bold"),
