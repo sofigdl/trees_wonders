@@ -22,7 +22,7 @@ oth_trees<-vect("D:/Tree_data_test/Test1/Class_other_t1.gpkg")
 
 str_class<-rast("D:/Classifications/Escalonada/RF/rf_12_st_oficial_v71.tif")
 prk_class<-rast("D:/Classifications/Escalonada/RF/rf_12_prk_oficial_v71.tif")
-res_class<-rast("D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v71.tif")
+res_class<-rast("D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v72.tif")
 oth_class<-rast("D:/Classifications/Escalonada/RF/rf_12_oth_oficial_v71.tif")
 
 str_trees$genus <- (terra::extract(str_class, str_trees, fun="modal", na.rm=TRUE))[2]
@@ -316,18 +316,18 @@ merged_trees$irrigation_start<-1
 merged_trees$irrigation_end<-12
 merged_trees$irrigation_amount<-0
 
-
-
-
-
 ################################################################################
 #                              coordinates
 ################################################################################
-merged_trees<-st_join(data, merged_trees, join=st_intersects, left=FALSE)
+merged_trees_2<-st_join(merged_trees, data, join=st_intersects, left=FALSE)
 
 merged_trees <- st_transform(merged_trees, CRS("+init=epsg:4326"))
 
+
 merged_trees <- merged_trees %>% extract(geometry, c('lon', 'lat'), '\\((.*), (.*)\\)', convert = TRUE)
+
+write.csv(merged_trees, file = "D:/Tree_data_test/Data/Munich_test.csv")
+#st_write(merged_trees, "D:/Tree_data_test/Data/Munich_test.gpkg")
 
 input<- merged_trees %>%
   dplyr::select(City, site_name, lat, lon, ID,  SVF_E, SVF_S, SVF_W, SVF_N, competing, LAI, soil_sealing, soil_type, field_capacity, wilting_point, rooting_depth, period, CO2_concentration, genus, dbh_class, dbh, height_90, crown_lenght, diam.y, radiation_Jan, 

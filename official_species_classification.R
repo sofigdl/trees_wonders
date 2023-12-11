@@ -116,7 +116,8 @@ rfmodel_10_st <- randomForest(genus_f ~ mr_j191_b1 + mr_j191_b2 + mr_j191_b3 + m
 
 rfmodel_10_st
 
-#varImpPlot(rfmodel_10_st, scale = FALSE)#, type=1, scale=TRUE)
+
+varImpPlot(rfmodel_10_st, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_st<-predict(covariates2, rfmodel_10_st, 
@@ -173,6 +174,7 @@ rfmodel_10_prk <- randomForest(genus_f ~ mr_j191_b1 + mr_j191_b2 + mr_j191_b3 + 
 
 rfmodel_10_prk
 
+varImpPlot(rfmodel_10_prk, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_prk<-predict(covariates2, rfmodel_10_prk, 
@@ -228,10 +230,12 @@ rfmodel_10_resi <- randomForest(genus_f ~ mr_j191_b1 + mr_j191_b2 + mr_j191_b3 +
 
 rfmodel_10_resi
 
+varImpPlot(rfmodel_10_resi, scale = FALSE)#, type=1, scale=TRUE)
+
 
 #Prediction
 pred_rf_10_resi<-predict(covariates2, rfmodel_10_resi, 
-                         filename = "D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v71.tif",
+                         filename = "D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v72.tif",
                          format ="GTiff",
                          overwrite=TRUE)
 
@@ -284,6 +288,7 @@ rfmodel_10_oth <- randomForest(genus_f ~ mr_j191_b1 + mr_j191_b2 + mr_j191_b3 + 
 
 rfmodel_10_oth
 
+varImpPlot(rfmodel_10_oth, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_oth<-predict(covariates2, rfmodel_10_oth, 
@@ -307,4 +312,14 @@ obs_10_oth <- as.factor(species_10_oth$genus)
 cm_10_oth<-confusionMatrix(pred_10_oth, reference = obs_10_oth)
 
 cm_10_oth                                                        
+
+
+#write.table(as.table(cm_10_prk$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_parks.txt")
+write.table(as.table(cm_10_resi$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_residential.txt")
+write.table(as.table(cm_10_oth$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_other.txt")
+#write.table(as.table(cm_10_st$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_streets.txt")
+#write.table(as.table(cm_10_prk$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_parks_overall.txt")
+write.table(as.table(cm_10_resi$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_residential_overall.txt")
+write.table(as.table(cm_10_oth$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_other_overall.txt")
+#write.table(as.table(cm_10_st$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_streets_overall.txt")
 
