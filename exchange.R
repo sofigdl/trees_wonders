@@ -1169,3 +1169,200 @@ cm_4_oth<-confusionMatrix(pred_4_oth, reference = obs_4_oth)
 
 cm_4_oth
 
+
+#-----------------------------------------------------------------------
+#Load vector
+Mue_trees<-st_read("D:/Trees_data/Baum_kataster_Munich_32N_sampled.gpkg")
+
+Mue_trees$coords.x<-st_coordinates(TBK_trees)[,1]
+Mue_trees$coords.y<-st_coordinates(TBK_trees)[,2]
+
+
+
+names(Mue_trees)<-c("OBJECTID", "BAUM_NUMMER", "BAUM_EXISTIERT", "STRASSE_HNR", "PLATZFLAECHE", "STANDORTMERKMAL", "BODENVOLUMEN", "OBERFLAECHENSTRUKTUR",   
+                    "GATTUNG", "ART", "SORTE", "BAUMART_LAT", "BAUMART_DE", "VERKEHRSBELASTUNG", "HOEHE_M", "HOEHENKLASSE", "STAMMFORM",
+                    "STAMMDURCHM_1_CM", "STAMMDURCHM_2_CM", "STAMMDURCHM_3_CM", "STAMMDURCHM_4_CM", "STAMMDURCHM_5_CM", "STAMMDURCHM_BEMERK", "STAMMUMFANG_1_BERECHNET",
+                    "STAMMUMFANG_2_BERECHNET", "STAMMUMFANG_3_BERECHNET", "STAMMUMFANG_4_BERECHNET", "STAMMUMFANG_5_BERECHNET",
+                    "KRONE_M", "KRONEN_KLASSE", "VITALITAET", "BAUMALTER", "STAMMSCHAEDEN", "RINDENNEKROSEN", "MECHAN_SCHAEDEN", "STAMMFUSSSCHADEN",       
+                    "FAULHERDE", "KRANKHEITEN_SCHAEDLINGE", "ESCHENTRIEBSTERBEN", "KASTANIENMINIERMOTTE", "PILZFRUCHTKOERPER", "BLATTNEKROSEN", "BEMERKUNG_KRANKHEITEN",
+                    "BIOTOP", "NATURDENKMAL", "X_UTM", "Y_UTM", "FA_FREIANLAGENKATEGORIE", "REF_STADTBEZIRK", "GLOBALID", "RVI_mrj19", "RVI_mrs21", "ndvi_mrj19", "ndvi_mrs21", "ndre_mrj19", "ndre_mrs21", "chm", "lu_raster", 
+                    "mr_j191_b1", "mr_j191_b2", "mr_j191_b3", "mr_j191_b4", "mr_j191_b5", "mr_j191_b6", "mr_j191_b7", "mr_j191_b8",
+                    "mr_s211_b1", "mr_s211_b2", "mr_s211_b3", "mr_s211_b4", "mr_s211_b5", "mr_s211_b6", "mr_s211_b7", "mr_s211_b8", "geom", "x", "y")
+
+
+#_________________________________________________________________________________________________________________________________________________________
+
+Wue_trees<-st_read("D:/Preprocessed/Test_wue/trees-sampled.gpkg")
+Wue_trees$coords.x<-st_coordinates(Wue_trees)[,1]
+Wue_trees$coords.y<-st_coordinates(Wue_trees)[,2]
+
+
+Wue_trees <- Wue_trees %>%
+  mutate(gattung = sub("^(\\w+).*", "\\1", baumart_la))
+
+
+Wue_trees<-as.data.frame((Wue_trees))
+
+# Bands to subset
+bands_to_subset <- c("source_id", "coords.x", "coords.y", "baumart", "gattung", "kronenbrei", "baumhoehe", "CO_1", "CO_2", "CO_3", "CO_4", "CO_5", "CO_6", "CO_7", "CO_8", "CO_9", "CO_10",
+                     "CO_11", "CO_12", "CO_13", "CO_14", "CO_15", "CO_16", "CO_17", "CO_18", "CO_19", "CO_20", "geom")
+
+#Subset the raster bands
+Wue_trees <- Wue_trees[ , bands_to_subset]
+
+
+names(Wue_trees)<-c("source_id", "coords.x", "coords.y", "baumart", "gattung", "kronenbrei", "baumhoehe",   
+                    "mr_j191_b1", "mr_j191_b2", "mr_j191_b3", "mr_j191_b4", "mr_j191_b5", "mr_j191_b6", "mr_j191_b7", "mr_j191_b8",
+                    "mr_s211_b1", "mr_s211_b2", "mr_s211_b3", "mr_s211_b4", "mr_s211_b5", "mr_s211_b6", "mr_s211_b7", "mr_s211_b8", 
+                    "ndvi_mrj19", "ndvi_mrs21", "chm", "lu_raster", "geom")
+
+
+#########################################################################################
+
+#Load raster
+covariates<-stack("D:/Preprocessed/New_preprocessing/covariates_masked.tif")
+trees_chm<-raster("D:/Classifications/2.2_trees_MR_nobuildings.tif")
+trees_chm<-resample(trees_chm, covariates)
+covariates2<-covariates *trees_chm
+
+names(covariates2)<-  c("RVI_mrj19", "RVI_mrs21", "ndvi_mrj19", "ndvi_mrs21", "ndre_mrj19", "ndre_mrs21", "chm", "lu_raster", 
+                        "mr_j191_b1", "mr_j191_b2", "mr_j191_b3", "mr_j191_b4", "mr_j191_b5", "mr_j191_b6", "mr_j191_b7", "mr_j191_b8",
+                        "mr_s211_b1", "mr_s211_b2", "mr_s211_b3", "mr_s211_b4", "mr_s211_b5", "mr_s211_b6", "mr_s211_b7", "mr_s211_b8")
+
+
+#########################################################################################
+
+#Load raster
+covariates_wue<-stack("D:/Preprocessed/Test_wue/covariates.tif")
+
+# Bands to subset
+bands_to_subset <- c( "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_1.1", "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_2.1", "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_3.1",
+                      "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_4.1", "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_5.1", "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_6.1",
+                      "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_7.1", "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_8.1", "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_1.1",
+                      "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_2.1", "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_3.1", "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_4.1",
+                      "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_5.1", "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_6.1", "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_7.1",
+                      "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_8.1", "pan.20JUL23101818.M2AS_R1C1.22EUSI.1785.02.1_7.2", "pan.20JUL04101824.M2AS_R1C1.22EUSI.1785.02.2_7.2",
+                      "Z", "Cat_pat"  )
+
+# Subset the raster bands
+subset_raster <- subset(covariates_wue, bands_to_subset)
+
+subset_raster <- projectRaster(subset_raster, crs= 32632)
+
+names(subset_raster)<-c("mr_j191_b1", "mr_j191_b2", "mr_j191_b3", "mr_j191_b4", "mr_j191_b5", "mr_j191_b6", "mr_j191_b7", "mr_j191_b8",
+                        "mr_s211_b1", "mr_s211_b2", "mr_s211_b3", "mr_s211_b4", "mr_s211_b5", "mr_s211_b6", "mr_s211_b7", "mr_s211_b8", 
+                        "ndvi_mrj19", "ndvi_mrs21", "chm", "lu_raster")
+
+covariates_wue<-subset_raster
+
+
+
+########################################################################################
+#Prepare the first two classes
+TBK_trees_2<-Mue_trees
+TBK_trees_2$species<-ifelse(TBK_trees_2$GATTUNG == 2, "Acer",
+                            ifelse(TBK_trees_2$GATTUNG == 52, "Tilia", "Other"))
+
+TBK_trees_2$genus<-ifelse(TBK_trees_2$species == "Acer", 1,
+                          ifelse(TBK_trees_2$species == "Tilia", 2, 3 ))
+
+
+# Divide the trees according to the land use
+TBK_trees_streets_2<-subset(TBK_trees_2, lu_raster == 2)
+TBK_trees_parks_2<-subset(TBK_trees_2, lu_raster == 1)
+TBK_trees_resi_2<-subset(TBK_trees_2, lu_raster == 3)
+TBK_trees_otro_2<-subset(TBK_trees_2, lu_raster == 4)
+
+#------------------------------------
+#  Prepare data for Würzburg
+#------------------------------------
+#Prepare the first two classes
+Wue_trees_2<-Wue_trees
+
+Wue_trees_2$genus<-ifelse(Wue_trees$gattung == "Acer", 1,
+                          ifelse(Wue_trees$gattung == "Tilia", 2, 3))
+
+
+# Divide the trees according to the land use
+Wue_trees_streets_2<-subset(Wue_trees_2, lu_raster == 2)
+Wue_trees_parks_2<-subset(Wue_trees_2, lu_raster == 1)
+Wue_trees_resi_2<-subset(Wue_trees_2, lu_raster == 3)
+Wue_trees_otro_2<-subset(Wue_trees_2, lu_raster == 4)
+
+
+
+# Streets ---------------------------------------------------------------------------------------------------------------------------
+
+#Transform it to data frame
+trees_2_st <-as.data.frame(Wue_trees_streets_2)[c("coords.x", "coords.y", "species", "genus", "mr_j191_b1", "mr_j191_b2", "mr_j191_b3", "mr_j191_b4", "mr_j191_b5", "mr_j191_b6", "mr_j191_b7", "mr_j191_b8", "mr_s211_b1", "mr_s211_b2", "mr_s211_b3", "mr_s211_b4", "mr_s211_b5", "mr_s211_b6", "mr_s211_b7", "mr_s211_b8", "ndvi_mrj19", "ndvi_mrs21", "chm" )]
+trees_2_st$class<-factor(trees_2_st$species)
+trees_2_st$genus_f<-factor(trees_2_st$genus)
+
+#Make it replicable
+set.seed(23)
+
+#Clean the dataset
+trees_clean_2_st<-na.omit(trees_2_st)
+
+#Divide the 70% of the dataset as training set and remaining 30% as testing set
+sample<-sample.split(trees_clean_2_st$class, SplitRatio=0.7)
+
+#Create the new data sets
+train_2_st<-subset(trees_clean_2_st, sample==TRUE)
+test_2_st<-subset(trees_clean_2_st, sample==FALSE)
+
+
+#Prepare model
+
+rfmodel_2_st <- randomForest(genus_f ~ mr_j191_b1 + mr_j191_b2 + mr_j191_b3 + mr_j191_b4 + mr_j191_b5 + mr_j191_b6 + mr_j191_b7 + 
+                               mr_j191_b8 + mr_s211_b1 + mr_s211_b2 + mr_s211_b3 + mr_s211_b4 + mr_s211_b5 + mr_s211_b6 + mr_s211_b7 + 
+                               mr_s211_b8 + ndvi_mrj19 + ndvi_mrs21 + chm, data=train_2_st, na.action = na.omit, ntree=2000, importance = TRUE, confusion=TRUE)
+
+rfmodel_2_st
+
+#------------------------------------
+#   APLICAR MODELO A WÜRZBURG
+#------------------------------------
+#Transform it to data frame
+mue_trees_2_st <-as.data.frame(TBK_trees_streets_2)[c( "coords.x","coords.y", "genus", "mr_j191_b1", "mr_j191_b2", "mr_j191_b3", "mr_j191_b4", "mr_j191_b5", "mr_j191_b6", "mr_j191_b7", "mr_j191_b8", "mr_s211_b1", "mr_s211_b2", "mr_s211_b3", "mr_s211_b4", "mr_s211_b5", "mr_s211_b6", "mr_s211_b7", "mr_s211_b8", "ndvi_mrj19", "ndvi_mrs21", "chm" )]
+mue_trees_2_st$class<-factor(mue_trees_2_st$genus)
+mue_trees_2_st$genus_f<-factor(mue_trees_2_st$genus)
+
+#Make it replicable
+set.seed(23)
+
+#Clean the dataset
+mue_trees_clean_2_st<-na.omit(mue_trees_2_st)
+
+#Divide the 70% of the dataset as training set and remaining 30% as testing set
+sample<-sample.split(mue_trees_clean_2_st$class, SplitRatio=0.7)
+
+#Create the new data sets
+mue_train_2_st<-subset(mue_trees_clean_2_st, sample==TRUE)
+mue_test_2_st<-subset(mue_trees_clean_2_st, sample==FALSE)
+
+
+#Prediction
+pred_rf_2_st<-predict(covariates, rfmodel_2_st, 
+                      filename = "D:/Classifications/Cruzada/rf_2_st_mue_v1.tif",
+                      format ="GTiff",
+                      overwrite=TRUE)
+
+
+species_2_st<-mue_test_2_st[c("coords.x","coords.y","genus")]
+
+# Convert the data frame to a spatial object (sf)
+species_2_st <- st_as_sf(species_2_st, coords = c("coords.x", "coords.y"))
+# Set the CRS (Coordinate Reference System) for the data frame
+st_crs(species_2_st) <- st_crs(crs(covariates_wue))
+
+
+#extract predictions
+pred_2_st <- as.factor(extract(pred_rf_2_st, species_2_st))
+
+obs_2_st <- as.factor(species_2_st$genus)
+
+
+cm_2_st<-confusionMatrix(pred_2_st, reference = obs_2_st)
+
+cm_2_st

@@ -13,7 +13,7 @@ library(caret)
 #Load vector
 TBK_trees<-st_read("D:/Trees_data/Baum_kataster_Munich_32N_sampled.gpkg")
 
-genus<- unique(TBK_trees$GATTUNG)
+unique(TBK_trees$GATTUNG)
 genus
 
 
