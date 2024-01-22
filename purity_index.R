@@ -1,10 +1,11 @@
-
+install.packages("viridis")
 library(sf)
 library(tidyverse)
 library(terra)
 library(dplyr)
 library(raster)
 library(exactextractr)
+library(viridis)
 
 #Load data
 str_trees<-st_read("D:/Paper_1/Class_streets_t1.gpkg")
@@ -66,3 +67,41 @@ class(trees_fractions$genus)
 
 # Export the joined data to a geopackage
 st_write(trees_fractions, "D:/Paper_1/purity_index_official.gpkg")
+
+
+
+#-------------------------------------------------------------------------------------------------
+
+summary(trees_fractions)
+
+#Extract the number of trees per genus
+counts_per_genus <- trees_fractions %>%
+  group_by(genus) %>%
+  summarise(count = n())
+
+#Create an histogram of the distribution of the purity index
+
+hist(trees_fractions$index, 
+     xlab = "Purity index",
+     ylab = "Frequency",
+     col = heat.colors(10)[cut(trees_fractions$index, breaks = 10)],
+     border = "#262626",
+     bg = "#262626"
+     )
+
+
+ggplot(trees_fractions, aes(x = index)) +
+  geom_histogram(binwidth = 0.05, boundary = 0, color = "#262626") +
+  scale_fill_viridis(option="turbo")+
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill ="#262626"),
+    axis.text = element_text(color = "white"),
+    axis.title = element_text(color = "white"),
+    plot.title = element_text(color = "white"),
+    panel.grid.major = element_line(color = "white"),
+    panel.grid.minor = element_line(color = "white"),
+  ) +
+  labs(title = "Histogram of Index",
+       x = "Index",
+       y = "Frequency")
