@@ -15,15 +15,15 @@ pacman::p_load(dplyr,sf,ggplot2, mapview, st, units, REdaS)
 ################################################################################
 
 #Load data
-str_trees<-vect("D:/Tree_data_test/Test1/Class_streets_t1.gpkg")
-prk_trees<-vect("D:/Tree_data_test/Test1/Class_park_t1.gpkg")
-res_trees<-vect("D:/Tree_data_test/Test1/Class_resi_t1.gpkg")
-oth_trees<-vect("D:/Tree_data_test/Test1/Class_other_t1.gpkg")
+str_trees<-vect("D:/Test_MR/Class_streets.gpkg")
+prk_trees<-vect("D:/Test_MR/Class_parks.gpkg")
+res_trees<-vect("D:/Test_MR/Class_resi.gpkg")
+oth_trees<-vect("D:/Test_MR/Class_other.gpkg")
 
-str_class<-rast("D:/Classifications/Escalonada/RF/rf_12_st_oficial_v71.tif")
-prk_class<-rast("D:/Classifications/Escalonada/RF/rf_12_prk_oficial_v71.tif")
-res_class<-rast("D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v72.tif")
-oth_class<-rast("D:/Classifications/Escalonada/RF/rf_12_oth_oficial_v71.tif")
+str_class<-rast("D:/Test_MR/st_class.tif")
+prk_class<-rast("D:/Test_MR/prk_class.tif")
+res_class<-rast("D:/Test_MR/resi_class.tif")
+oth_class<-rast("D:/Test_MR/oth_class.tif")
 
 str_trees$genus <- (terra::extract(str_class, str_trees, fun="modal", na.rm=TRUE))[2]
 prk_trees$genus <- (terra::extract(prk_class, prk_trees, fun="modal", na.rm=TRUE))[2]
@@ -37,10 +37,10 @@ merged_trees <- rbind(str_trees, prk_trees, res_trees, oth_trees)
 #                              SVF
 ################################################################################
 
-data<-vect("D:/Tree_data_test/Official_test1/Points_all.gpkg")
-svf<-rast("D:/Tree_data_test/Test1/SkyViewFactor.tif")
+data<-vect("D:/Test_MR/RS_Points_MR_32632.gpkg")
+svf<-rast("D:/Test_MR/SVF.tif")
 
-data$SVF_total <- terra::extract(svf, data)[2]
+data$SVF_1 <- terra::extract(svf, data)[2]
 
 
 data$SVF_S<- data$SVF_1 / 4
@@ -52,7 +52,7 @@ data$SVF_W<- data$SVF_1 / 4
 #                             Location
 ################################################################################
 
-data$city <- "Munich"
+data$City <- "Munich"
 data$treeID<- data$ID
 
 data<-st_as_sf(data)
@@ -243,7 +243,7 @@ data <- data %>%
 ################################################################################
 #                                extras
 ################################################################################
-
+merged_trees$ID <- 1:nrow(merged_trees)
 merged_trees$LAI<-0
 merged_trees$competing<-0
 merged_trees$soil_type<-"sandy loam"
@@ -315,22 +315,47 @@ merged_trees$precipitation_Dez<-58.5
 merged_trees$irrigation_start<-1
 merged_trees$irrigation_end<-12
 merged_trees$irrigation_amount<-0
-
+st_write(merged_trees, "D:/Test_MR/MR_test_1.gpkg")
 ################################################################################
 #                              coordinates
 ################################################################################
-merged_trees_2<-st_join(merged_trees, data, join=st_intersects, left=FALSE)
 
-merged_trees <- st_transform(merged_trees, CRS("+init=epsg:4326"))
+#merged_trees_Coord<-st_join(merged_trees_1, data, join=st_intersects, left=FALSE)
+#merged_trees_Coord<- st_transform(merged_trees_Coord, CRS("+init=epsg:4326"))
+#merged_trees_Coord_2<-st_geometry(merged_trees_Coord)
+
+#merged_trees_Coord_2 <- merged_trees_Coord %>% extract(geometry, c('lon', 'lat'), '\\((.*), (.*)\\)', convert = TRUE)
+
+#merged_trees_Coord_2 <- merged_trees_Coord %>%
+  #st_coordinates() %>%
+  #as.data.frame() %>%
+  #rename(lon = X, lat = Y)
+
+#merged_trees_Coord <- project(merged_trees_1, "+proj=longlat +datum=WGS84 +no_defs")
+
+# Check the result to confirm transformation
+#crs(merged_trees_Coord)
+
+#coords <- terra::geom(merged_trees_Coord)
+
+#names(coords)[names(coords) == "x"] <- "lon"
+#names(coords)[names(coords) == "y"] <- "lat"
 
 
-merged_trees <- merged_trees %>% extract(geometry, c('lon', 'lat'), '\\((.*), (.*)\\)', convert = TRUE)
 
-write.csv(merged_trees, file = "D:/Tree_data_test/Data/Munich_test.csv")
+merged_trees_2<-st_join(data, merged_trees, join=st_intersects, left=FALSE)
+
+
+merged_trees_2<- st_transform(merged_trees_2, CRS("+init=epsg:4326"))
+
+#merged_trees_Coord_2<-st_geometry(merged_trees_Coord)
+merged_trees_2 <- merged_trees_2 %>% extract(geometry, c('lon', 'lat'), '\\((.*), (.*)\\)', convert = TRUE)
+
+#write.csv(merged_trees, file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/MR_test.csv")
 #st_write(merged_trees, "D:/Tree_data_test/Data/Munich_test.gpkg")
 
-input<- merged_trees %>%
-  dplyr::select(City, site_name, lat, lon, ID,  SVF_E, SVF_S, SVF_W, SVF_N, competing, LAI, soil_sealing, soil_type, field_capacity, wilting_point, rooting_depth, period, CO2_concentration, genus, dbh_class, dbh, height_90, crown_lenght, diam.y, radiation_Jan, 
+input<- merged_trees_2 %>%
+  dplyr::select(City, name, lat, lon, ID,  SVF_E, SVF_S, SVF_W, SVF_N, competing, LAI, soil_sealing, soil_type, field_capacity, wilting_point, rooting_depth, period, CO2_concentration, genus, dbh_class, dbh, height_90, crown_lenght, diam, radiation_Jan, 
                 radiation_Feb, radiation_Mar, radiation_Apr, radiation_May, radiation_Jun, radiation_Jul, radiation_Aug, radiation_Sep, radiation_Oct, radiation_Nov, radiation_Dez, temperature_Jan, temperature_Feb, temperature_Mar, temperature_Apr, temperature_May,
                 temperature_Jun, temperature_Jul, temperature_Aug, temperature_Sep, temperature_Oct, temperature_Nov, temperature_Dez, humidity_Jan, humidity_Feb, humidity_Mar, humidity_Apr, humidity_May, humidity_Jun, humidity_Jul, humidity_Aug, humidity_Sep,
                 humidity_Oct, humidity_Nov, humidity_Dez, wind_speed_Jan, wind_speed_Feb, wind_speed_Mar, wind_speed_Apr, wind_speed_May, wind_speed_Jun, wind_speed_Jul, wind_speed_Aug, wind_speed_Sep, wind_speed_Oct, wind_speed_Nov, wind_speed_Dez, precipitation_Jan,
@@ -344,7 +369,14 @@ names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SV
                  "humidity_Oct", "humidity_Nov", "humidity_Dez", "wind_speed_Jan", "wind_speed_Feb", "wind_speed_Mar", "wind_speed_Apr", "wind_speed_May", "wind_speed_Jun", "wind_speed_Jul", "wind_speed_Aug", "wind_speed_Sep", "wind_speed_Oct", "wind_speed_Nov", "wind_speed_Dez", "precipitation_Jan",
                  "precipitation_Feb", "precipitation_Mar", "precipitation_Apr", "precipitation_May", "precipitation_Jun", "precipitation_Jul", "precipitation_Aug", "precipitation_Sep", "precipitation_Oct", "precipitation_Nov", "precipitation_Dez", "irrigation_start", "irrigation_end", "irrigation_amount")
 
-write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t4.txt", sep = "\t", row.names = FALSE)
-write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t4.xlsx")
+
+write.table(data.frame(input), file="D:/Test_MR/input_data_MR.txt", sep = "\t", row.names = FALSE)
+write_xlsx(data.frame(input), path ="D:/Test_MR/input_data_MR.xlsx")
+
+write.table(data.frame(input), file="C:/Users/ang58gl/Documents/MEGAsync/PhD/input_data_MR.txt", sep = "\t", row.names = FALSE)
+write_xlsx(data.frame(input), path = "C:/Users/ang58gl/Documents/MEGAsync/PhD/input_data_MR.xlsx")
+
+#write.table(data.frame(input), file="D:/Tree_data_test/Official_test1/input_data_t4.txt", sep = "\t", row.names = FALSE)
+#write_xlsx(data.frame(input), path = "D:/Tree_data_test/Official_test1/input_data_t4.xlsx")
 
 table(merged_trees$genus)

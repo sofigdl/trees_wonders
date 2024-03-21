@@ -1,5 +1,5 @@
 
-library (car)
+library(car)
 library(sf)
 library(corrplot)
 library(randomForest)
@@ -14,7 +14,10 @@ library(caret)
 TBK_trees<-st_read("D:/Trees_data/Baum_kataster_Munich_32N_sampled.gpkg")
 
 unique(TBK_trees$GATTUNG)
-genus
+c<-as.data.frame(TBK_trees$GATTUNG)
+t<-as.data.frame(table(c))
+d<-subset(t, Freq<5)
+s<-t[order(t$Freq),]
 
 
 TBK_trees$coords.x<-st_coordinates(TBK_trees)[,1]
@@ -54,7 +57,7 @@ TBK_trees_10$species<-ifelse(TBK_trees_10$GATTUNG == 2, "Acer",
                                  #   ifelse(TBK_trees_10$GATTUNG == 8,"Carpinus", 
                                   #        ifelse(TBK_trees_10$GATTUNG == 20, "Fraxinus",
                                                   ifelse(TBK_trees_10$GATTUNG == 46, "Robinia",
-                                   #                      ifelse(TBK_trees_10$GATTUNG == 42, "Platanus", 
+                                   #                      ifelse(TBK_trees_10$GATTUNG == 42, "Prunus", 
                                                                 ifelse(TBK_trees_10$GATTUNG == 3, "Aesculus",
                                     #                                   ifelse(TBK_trees_10$GATTUNG == 19, "Fagus",
                                                                               ifelse(TBK_trees_10$GATTUNG == 41, "Populus",
@@ -121,9 +124,8 @@ varImpPlot(rfmodel_10_st, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_st<-predict(covariates2, rfmodel_10_st, 
-                       filename = "D:/Classifications/Escalonada/RF/rf_12_st_oficial_v71.tif",
-                       format ="GTiff",
-                       overwrite=TRUE)
+                       filename = "D:/Test_MR/st_class.tif",
+                       format ="GTiff")
 
 
 
@@ -178,9 +180,8 @@ varImpPlot(rfmodel_10_prk, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_prk<-predict(covariates2, rfmodel_10_prk, 
-                        filename = "D:/Classifications/Escalonada/RF/rf_12_prk_oficial_v71.tif",
-                        format ="GTiff",
-                        overwrite=TRUE)
+                        filename = "D:/Test_MR/prk_class.tif",
+                        format ="GTiff")
 
 
 
@@ -235,7 +236,7 @@ varImpPlot(rfmodel_10_resi, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_resi<-predict(covariates2, rfmodel_10_resi, 
-                         filename = "D:/Classifications/Escalonada/RF/rf_12_resi_oficial_v72.tif",
+                         filename = "D:/Test_MR/resi_class.tif",
                          format ="GTiff",
                          overwrite=TRUE)
 
@@ -292,7 +293,7 @@ varImpPlot(rfmodel_10_oth, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_oth<-predict(covariates2, rfmodel_10_oth, 
-                        filename = "D:/Classifications/Escalonada/RF/rf_12_oth_oficial_v71.tif",
+                        filename = "D:/Test_MR/oth_class.tif",
                         format ="GTiff",
                         overwrite=TRUE)
 
