@@ -54,6 +54,7 @@ names(covariates2)<-  c("RVI_mrj19", "RVI_mrs21", "ndvi_mrj19", "ndvi_mrs21", "n
 TBK_trees_10<-TBK_trees
 TBK_trees_10$species<-ifelse(TBK_trees_10$GATTUNG == 2, "Acer",
                              ifelse(TBK_trees_10$GATTUNG == 52, "Tilia",
+                                  #  ifelse(TBK_trees_10$GATTUNG == 39,"Pinus", 
                                  #   ifelse(TBK_trees_10$GATTUNG == 8,"Carpinus", 
                                   #        ifelse(TBK_trees_10$GATTUNG == 20, "Fraxinus",
                                                   ifelse(TBK_trees_10$GATTUNG == 46, "Robinia",
@@ -68,6 +69,7 @@ TBK_trees_10$species<-ifelse(TBK_trees_10$GATTUNG == 2, "Acer",
                              
 TBK_trees_10$genus<-ifelse(TBK_trees_10$species == "Tilia", 1,
                             ifelse(TBK_trees_10$species == "Robinia", 2,
+                                  # ifelse(TBK_trees_10$species == "Pinus", 8, 
                                    # ifelse(TBK_trees_10$species == "Platanus", 3,
                                           ifelse(TBK_trees_10$species == "Aesculus",4 ,
                                                 ifelse(TBK_trees_10$species == "Acer", 6,
@@ -124,7 +126,7 @@ varImpPlot(rfmodel_10_st, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_st<-predict(covariates2, rfmodel_10_st, 
-                       filename = "D:/Test_MR/st_class.tif",
+                       filename = "D:/Paper_1/st_class.tif",
                        format ="GTiff")
 
 
@@ -180,7 +182,7 @@ varImpPlot(rfmodel_10_prk, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_prk<-predict(covariates2, rfmodel_10_prk, 
-                        filename = "D:/Test_MR/prk_class.tif",
+                        filename = "D:/Paper_1/prk_class.tif",
                         format ="GTiff")
 
 
@@ -236,7 +238,7 @@ varImpPlot(rfmodel_10_resi, scale = FALSE)#, type=1, scale=TRUE)
 
 #Prediction
 pred_rf_10_resi<-predict(covariates2, rfmodel_10_resi, 
-                         filename = "D:/Test_MR/resi_class.tif",
+                         filename = "D:/Paper_1/resi_class.tif",
                          format ="GTiff",
                          overwrite=TRUE)
 
@@ -291,9 +293,11 @@ rfmodel_10_oth
 
 varImpPlot(rfmodel_10_oth, scale = FALSE)#, type=1, scale=TRUE)
 
+var_imp(rfmodel_10_oth)
+
 #Prediction
 pred_rf_10_oth<-predict(covariates2, rfmodel_10_oth, 
-                        filename = "D:/Test_MR/oth_class.tif",
+                        filename = "D:/Paper_1/oth_class.tif",
                         format ="GTiff",
                         overwrite=TRUE)
 
@@ -316,11 +320,11 @@ cm_10_oth
 
 
 #write.table(as.table(cm_10_prk$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_parks.txt")
-write.table(as.table(cm_10_resi$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_residential.txt")
-write.table(as.table(cm_10_oth$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_other.txt")
+#write.table(as.table(cm_10_resi$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_residential.txt")
+#write.table(as.table(cm_10_oth$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_other.txt")
 #write.table(as.table(cm_10_st$byClass), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_streets.txt")
 #write.table(as.table(cm_10_prk$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_parks_overall.txt")
-write.table(as.table(cm_10_resi$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_residential_overall.txt")
-write.table(as.table(cm_10_oth$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_other_overall.txt")
+#write.table(as.table(cm_10_resi$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_residential_overall.txt")
+#write.table(as.table(cm_10_oth$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_other_overall.txt")
 #write.table(as.table(cm_10_st$overall), file = "C:/Users/ang58gl/Documents/MEGAsync/PhD/Data Processing/confusion_matrix_streets_overall.txt")
 

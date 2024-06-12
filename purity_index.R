@@ -77,7 +77,7 @@ trees_fractions$index <- 1-trees_fractions$entropy / max_entropy
 # Export the joined data to a geopackage
 st_write(trees_fractions, "D:/Paper_1/purity_index_official.gpkg")
 
-
+trees_fractions<-st_read("D:/Paper_1/Test1/purity_index_official.gpkg")
 
 #-------------------------------------------------------------------------------------------------
 
