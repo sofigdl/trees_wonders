@@ -94,3 +94,6 @@ names(polygons_with_es)<- c("BL_NUMMER", "FLAECHE_QM", "BL_NR_2011", "ET_ID", "i
 
 # Save the result to a GeoJSON file
 st_write(polygons_with_es, "C:/Users/ang58gl/Documents/MEGAsync/PhD/Presentations/WochederUmwelt/Kepler/polygons_with_es_v3.geojson", driver = "GeoJSON")
+
+# Save the result to a GeoJSON file
+st_write(polygons_with_es, "C:/Users/ang58gl/Documents/MEGAsync/PhD/Presentations/WochederUmwelt/Kepler/polygons_with_es_v3.shp")
