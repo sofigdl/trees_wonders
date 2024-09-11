@@ -53,6 +53,8 @@ ordered_gattung <- names(gattung_freq[order(-gattung_freq)])
 # Create a new data frame with the ordered values and their frequencies
 ordered_gattung_df <- data.frame(gattung = ordered_gattung, frequency = gattung_freq[order(-gattung_freq)])
 ordered_gattung_df
+
+
 # #---------------------------------------------------------------------
 #                        Height
 #------------------------------------------------------------------------#

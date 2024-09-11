@@ -1,4 +1,6 @@
-######################### Diversity for trees in public areas grid (REMOTE) #####################
+pacman::p_load(sf, terra, dplyr, ggplot2, spdep)
+
+
 
 
 # Load your MR layer
@@ -13,497 +15,168 @@ grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
 # Convert grid to an sf object
 grid_sf <- st_sf(geometry = grid, crs = st_crs(rs_trees_all))
 
-######
-grid_sf$Richness <- NA
-grid_sf$Shannon <- NA
+
 grid_sf$Simpson <- NA
-grid_sf$InvSimp <- NA
-grid_sf$Pielou <- NA
-grid_sf$Margalef <- NA
-grid_sf$Menhi <- NA
+
 
 
 for(i in 1: nrow(grid_sf)){
   
-  Subgrid <- st_intersection(grid_sf[i,],rs_trees) %>% as.data.frame() %>% select("t1_majorit") %>% na.omit() %>% table() %>% as.data.frame()
-  
-  grid_sf$Richness[i] <- nrow(Subgrid)
-  
-  Subgrid$prop <- Subgrid$Freq / sum(Subgrid$Freq)
-  
-  grid_sf$Shannon[i] <- -sum(Subgrid$prop * log(Subgrid$prop))
+  Subgrid <- st_intersection(grid_sf[i,],rs_trees_pr) %>% as.data.frame() %>% select("t1_majorit") %>% na.omit() %>% table() %>% as.data.frame()
   
   # Simpson Index
   grid_sf$Simpson[i]<- sum(Subgrid$prop^2)
   
-  # Inverse Simpson Index
-  grid_sf$InvSimp[i] <- 1 / sum(Subgrid$prop^2)
-  
-  # Pielou's Evenness Index
-  grid_sf$Pielou[i] <- -sum(Subgrid$prop * log(Subgrid$prop)) / log(length(Subgrid$prop))
-  
-  # Margalef's Richness Index
-  grid_sf$Margalef[i] <- (length(Subgrid$prop) - 1) / log(sum(Subgrid$Freq))
-  
-  # Menhinick's Index
-  grid_sf$Menhi[i] <- length(Subgrid$prop) / sqrt(sum(Subgrid$Freq))
 }
 
-plot(grid_sf)
+######################### MODE #####################
 
+# Define the grid sizes to test
+grid_sizes <- seq(50, 1000, by = 50)  # You can adjust the sequence as needed
 
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_sf, aes(fill = Richness), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Richness") +
-  # Additional map elements
-  labs(title = "Genera Richness",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_sf))
+# Initialize a data frame to store the results
+simpson_results <- data.frame(GridSize = numeric(), ModeSimpson = numeric())
 
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_sf, aes(fill = Shannon), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Shannon Index") +
-  # Additional map elements
-  labs(title = "Shannon Index in Public Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_sf))
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_sf, aes(fill = Simpson), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Simpson Index") +
-  # Additional map elements
-  labs(title = "Simpson's Diversity Index in Public Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_sf))
-
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_sf, aes(fill = InvSimp), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Inverse Simpson Index") +
-  # Additional map elements
-  labs(title = "Inverse Simpson's Diversity Index in Public Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_sf))
-
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_sf, aes(fill = Pielou), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Pielou Index") +
-  # Additional map elements
-  labs(title = "Pielou's Evenness Index in Public Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_sf))
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_sf, aes(fill = Margalef), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Margalef Index") +
-  # Additional map elements
-  labs(title = "Margalef's Richness Index in Public Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_sf))
-
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_sf, aes(fill = Menhi), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Menhinick's Index") +
-  # Additional map elements
-  labs(title = "Menhinick's Index in Public Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_sf))
-
-######################### Diversity for trees in public areas grid  (CADASTRE) #####################
-
-
-# Load your MR layer
-MR <- st_read("C:/Users/ang58gl/Documents/Data/MittlererRing_new.shp")
-
-# Define the grid size
-grid_size <- 100  # 100 meters
-
-# Create a grid over the extent of the MR layer
-grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
-
-# Convert grid to an sf object
-grid_cd <- st_sf(geometry = grid, crs = st_crs(rs_trees_all))
-
-######
-grid_cd$Richness <- NA
-grid_cd$Shannon <- NA
-grid_cd$Simpson <- NA
-grid_cd$InvSimp <- NA
-grid_cd$Pielou <- NA
-grid_cd$Margalef <- NA
-grid_cd$Menhi <- NA
-
-
-for(i in 1: nrow(grid_cd)){
+# Loop over the different grid sizes
+for (grid_size in grid_sizes) {
   
-  Subgrid <- st_intersection(grid_cd[i,],cadastre) %>% as.data.frame() %>% select("GATTUNG") %>% na.omit() %>% table() %>% as.data.frame()
+  # Create the grid for the current grid size
+  grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
+  grid_sf <- st_sf(geometry = grid, crs = st_crs(rs_trees_all))
   
-  grid_cd$Richness[i] <- nrow(Subgrid)
+  # Initialize Simpson column
+  grid_sf$Simpson <- NA
   
-  Subgrid$prop <- Subgrid$Freq / sum(Subgrid$Freq)
+  # Calculate the Simpson Index for each grid cell
+  for (i in 1:nrow(grid_sf)) {
+    
+    # Extract points within the current grid cell
+    Subgrid <- st_intersection(grid_sf[i,], rs_trees) %>% 
+      as.data.frame() %>% 
+      select("t1_majorit") %>% 
+      na.omit() %>% 
+      table() %>% 
+      as.data.frame()
+    
+    # Calculate proportions
+    Subgrid$prop <- Subgrid$Freq / sum(Subgrid$Freq)
+    
+    # Calculate Simpson Index and store it in the grid_sf object
+    grid_sf$Simpson[i] <- sum(Subgrid$prop^2)
+  }
   
-  grid_cd$Shannon[i] <- -sum(Subgrid$prop * log(Subgrid$prop))
+  # Calculate the mode of the Simpson values
+  simpson_mode <- median(grid_sf$Simpson, na.rm = TRUE)
   
-  # Simpson Index
-  grid_cd$Simpson[i]<- sum(Subgrid$prop^2)
-  
-  # Inverse Simpson Index
-  grid_cd$InvSimp[i] <- 1 / sum(Subgrid$prop^2)
-  
-  # Pielou's Evenness Index
-  grid_cd$Pielou[i] <- -sum(Subgrid$prop * log(Subgrid$prop)) / log(length(Subgrid$prop))
-  
-  # Margalef's Richness Index
-  grid_cd$Margalef[i] <- (length(Subgrid$prop) - 1) / log(sum(Subgrid$Freq))
-  
-  # Menhinick's Index
-  grid_cd$Menhi[i] <- length(Subgrid$prop) / sqrt(sum(Subgrid$Freq))
+  # Store the results in the data frame
+  simpson_results <- rbind(simpson_results, data.frame(GridSize = grid_size, ModeSimpson = simpson_mode))
 }
 
-plot(grid_cd)
+# Plot the results
+ggplot(simpson_results, aes(x = GridSize, y = ModeSimpson)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Median of Simpson Index vs. Grid Size",
+       x = "Grid Size (meters)",
+       y = "Mode of Simpson Index") +
+  theme_minimal()
 
 
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_cd, aes(fill = Richness), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Richness") +
-  # Additional map elements
-  labs(title = "Genera Richness",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_cd))
 
 
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_cd, aes(fill = Shannon), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Shannon Index") +
-  # Additional map elements
-  labs(title = "Shannon Index in Public Areas (Cadastre)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_cd))
+######################### Standard deviation #####################
 
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_cd, aes(fill = Simpson), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Simpson Index") +
-  # Additional map elements
-  labs(title = "Simpson's Diversity Index in Public Areas (Cadastre)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_cd))
+simpson_results_st <- data.frame(GridSize = numeric(), StdDevSimpson = numeric())
 
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_cd, aes(fill = InvSimp), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Inverse Simpson Index") +
-  # Additional map elements
-  labs(title = "Inverse Simpson's Diversity Index in Public Areas (Cadastre)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_cd))
-
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_cd, aes(fill = Pielou), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Pielou Index") +
-  # Additional map elements
-  labs(title = "Pielou's Evenness Index in Public Areas (Cadastre)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_cd))
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_cd, aes(fill = Margalef), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Margalef Index") +
-  # Additional map elements
-  labs(title = "Margalef's Richness Index in Public Areas (Cadastre)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_cd))
-
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_cd, aes(fill = Menhi), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Menhinick's Index") +
-  # Additional map elements
-  labs(title = "Menhinick's Index in Public Areas (Cadastre)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_cd))
-
-
-######################### Diversity for trees in private areas grid  (Remote Sensing) #####################
-
-# Load your MR layer
-MR <- st_read("C:/Users/ang58gl/Documents/Data/MittlererRing_new.shp")
-
-# Define the grid size
-grid_size <- 100  # 100 meters
-
-# Create a grid over the extent of the MR layer
-grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
-
-# Convert grid to an sf object
-grid_pri <- st_sf(geometry = grid, crs = st_crs(rs_trees_all))
-
-######
-grid_pri$Richness <- NA
-grid_pri$Shannon <- NA
-grid_pri$Simpson <- NA
-grid_pri$InvSimp <- NA
-grid_pri$Pielou <- NA
-grid_pri$Margalef <- NA
-grid_pri$Menhi <- NA
-
-
-for(i in 1: nrow(grid_pri)){
+for (grid_size in grid_sizes) {
+  grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
+  grid_sf <- st_sf(geometry = grid, crs = st_crs(rs_trees_all))
+  grid_sf$Simpson <- NA
   
-  Subgrid <- st_intersection(grid_pri[i,],rs_trees_pr) %>% as.data.frame() %>% select("t1_majorit") %>% na.omit() %>% table() %>% as.data.frame()
+  for (i in 1:nrow(grid_sf)) {
+    Subgrid <- st_intersection(grid_sf[i,], rs_trees_pr) %>% 
+      as.data.frame() %>% 
+      select("t1_majorit") %>% 
+      na.omit() %>% 
+      table() %>% 
+      as.data.frame()
+    
+    Subgrid$prop <- Subgrid$Freq / sum(Subgrid$Freq)
+    grid_sf$Simpson[i] <- sum(Subgrid$prop^2)
+  }
   
-  grid_pri$Richness[i] <- nrow(Subgrid)
-  
-  Subgrid$prop <- Subgrid$Freq / sum(Subgrid$Freq)
-  
-  grid_pri$Shannon[i] <- -sum(Subgrid$prop * log(Subgrid$prop))
-  
-  # Simpson Index
-  grid_pri$Simpson[i]<- sum(Subgrid$prop^2)
-  
-  # Inverse Simpson Index
-  grid_pri$InvSimp[i] <- 1 / sum(Subgrid$prop^2)
-  
-  # Pielou's Evenness Index
-  grid_pri$Pielou[i] <- -sum(Subgrid$prop * log(Subgrid$prop)) / log(length(Subgrid$prop))
-  
-  # Margalef's Richness Index
-  grid_pri$Margalef[i] <- (length(Subgrid$prop) - 1) / log(sum(Subgrid$Freq))
-  
-  # Menhinick's Index
-  grid_pri$Menhi[i] <- length(Subgrid$prop) / sqrt(sum(Subgrid$Freq))
+  stddev_simpson <- sd(grid_sf$Simpson, na.rm = TRUE)
+  simpson_results_st <- rbind(simpson_results_st, data.frame(GridSize = grid_size, StdDevSimpson = stddev_simpson))
 }
 
-plot(grid_pri)
+ggplot(simpson_results_st, aes(x = GridSize, y = StdDevSimpson)) +
+  geom_line(color = "green") +
+  geom_point(color = "purple") +
+  labs(title = "Standard Deviation of Simpson Index vs. Grid Size",
+       x = "Grid Size (meters)",
+       y = "Standard Deviation of Simpson Index") +
+  theme_minimal()
 
 
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_pri, aes(fill = Richness), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Richness") +
-  # Additional map elements
-  labs(title = "Genera Richness",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_pri))
+########################### Spatial Autocorrelation
 
+library(spdep)
 
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_pri, aes(fill = Shannon), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Shannon Index") +
-  # Additional map elements
-  labs(title = "Shannon Index in Private Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_pri))
+# Initialize a data frame to store the results
+morans_results <- data.frame(GridSize = numeric(), MoransI = numeric(), PValue = numeric())
 
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_pri, aes(fill = Simpson), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Simpson Index") +
-  # Additional map elements
-  labs(title = "Simpson's Diversity Index in Private Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_pri))
+# Loop over each grid size
+for (grid_size in grid_sizes) {
+  # Create a grid over the extent of the MR layer
+  grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
+  grid_sf <- st_sf(geometry = grid, crs = st_crs(rs_trees_all))
+  
+  # Initialize the Simpson column
+  grid_sf$Simpson <- NA
+  
+  # Calculate the Simpson Index for each grid cell
+  for (i in 1:nrow(grid_sf)) {
+    Subgrid <- st_intersection(grid_sf[i,], rs_trees_pr) %>% 
+      as.data.frame() %>% 
+      select("t1_majorit") %>% 
+      na.omit() %>% 
+      table() %>% 
+      as.data.frame()
+    
+    if (nrow(Subgrid) > 0) {
+      Subgrid$prop <- Subgrid$Freq / sum(Subgrid$Freq)
+      grid_sf$Simpson[i] <- sum(Subgrid$prop^2)
+    }
+  }
+  
+  # Remove rows with NA values in Simpson Index
+  grid_sf_clean <- grid_sf[!is.na(grid_sf$Simpson), ]
+  
+  # Create a spatial weights matrix (use queen or rook method)
+  nb <- poly2nb(grid_sf_clean)  # Neighbors list
+  
+  # Filter out cells with no neighbors
+  empty_neighbours <- sapply(nb, function(x) length(x) == 0)
+  if (any(empty_neighbours)) {
+    nb <- nb[!empty_neighbours]
+    grid_sf_clean <- grid_sf_clean[!empty_neighbours, ]
+  }
+  
+  # Convert neighbor list to spatial weights matrix
+  lw <- nb2listw(nb, zero.policy = TRUE)  # Handle isolated cells with zero weights
+  
+  # Calculate Moran's I
+  morans_test <- moran.test(grid_sf_clean$Simpson, lw, na.action = na.exclude, zero.policy = TRUE)
+  
+  # Store the results
+  morans_results <- rbind(morans_results, data.frame(GridSize = grid_size, MoransI = morans_test$estimate[1], PValue = morans_test$p.value))
+}
 
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_pri, aes(fill = InvSimp), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Inverse Simpson Index") +
-  # Additional map elements
-  labs(title = "Inverse Simpson's Diversity Index in Private Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_pri))
-
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_pri, aes(fill = Pielou), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Pielou Index") +
-  # Additional map elements
-  labs(title = "Pielou's Evenness Index in Private Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_pri))
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_pri, aes(fill = Margalef), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Margalef Index") +
-  # Additional map elements
-  labs(title = "Margalef's Richness Index in Private Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_pri))
-
-
-# Plot the map with OpenStreetMap as the base layer
-ggplot() +
-  # Add OpenStreetMap tiles
-  annotation_map_tile(type = "osm", zoom = 14) +
-  # Add the grid layer with 75% opacity
-  geom_sf(data = grid_pri, aes(fill = Menhi), color = NA, alpha = 0.65) +
-  # Use a blue-to-yellow color palette
-  scale_fill_viridis(option = "D", direction = 1, name = "Menhinick's Index") +
-  # Additional map elements
-  labs(title = "Menhinick's Index in Private Areas (Remote Sensing)",
-       subtitle = "Base Map: OpenStreetMap"
-  ) +
-  theme_minimal() +
-  # Ensure the map uses the same CRS
-  coord_sf(crs = st_crs(grid_pri))
+# Plot the results
+ggplot(morans_results, aes(x = GridSize, y = MoransI)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Moran's I vs. Grid Size",
+       x = "Grid Size (meters)",
+       y = "Moran's I") +
+  theme_minimal()

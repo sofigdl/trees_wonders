@@ -381,7 +381,7 @@ names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SV
 
 st_write(input, "D:/Test_MR/svf_data.csv")
 
-write.csv(input, file="D:/Test_MR/tree_data_wochederumwelt.csv")
+write.csv(input, file="D:/Test_MR/RS_tree_all.csv")
 write.table(data.frame(input), file="D:/Test_MR/input_data_MR.txt", sep = "\t", row.names = FALSE)
 write_xlsx(data.frame(input), path ="D:/Test_MR/input_data_MR.xlsx")
 
