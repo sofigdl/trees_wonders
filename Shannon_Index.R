@@ -8,7 +8,7 @@ cadastre_all<-st_read("D:/Paper_1/Diversity/Cadastre_trees.shp")
 
 
 # Filter the data frames to include only rows where 'public' is 1
-rs_trees <- rs_trees_all[rs_trees_all$Public == 1, ]
+rs_trees <- rs_trees_all[rs_trees_all$Public == 0, ]
 cadastre <- cadastre_all[cadastre_all$Public == 1, ]
 
 # Reclassify the 'GATTUNG' column in the cadastre dataset
@@ -39,7 +39,7 @@ calculate_diversity_indices <- function(data) {
   shannon_index <- -sum(data$Prop * log(data$Prop))
   
   # Simpson Index
-  simpson_index <- sum(data$Prop^2)
+  simpson_index <- 1-sum(data$Prop^2)
   
   # Inverse Simpson Index
   inverse_simpson_index <- 1 / simpson_index
@@ -141,7 +141,7 @@ for(i in 1: nrow(grid_rs)){
   grid_rs$Shannon[i] <- -sum(Subgrid$prop * log(Subgrid$prop))
   
   # Simpson Index
-  grid_rs$Simpson[i]<- sum(Subgrid$prop^2)
+  grid_rs$Simpson[i]<- 1-sum(Subgrid$prop^2)
   
   # Inverse Simpson Index
   grid_rs$InvSimp[i] <- 1 / sum(Subgrid$prop^2)
@@ -322,7 +322,7 @@ for(i in 1: nrow(grid_cd)){
   grid_cd$Shannon[i] <- -sum(Subgrid$prop * log(Subgrid$prop))
   
   # Simpson Index
-  grid_cd$Simpson[i]<- sum(Subgrid$prop^2)
+  grid_cd$Simpson[i]<- 1-sum(Subgrid$prop^2)
   
   # Inverse Simpson Index
   grid_cd$InvSimp[i] <- 1 / sum(Subgrid$prop^2)
@@ -471,7 +471,7 @@ ggplot() +
 MR <- st_read("C:/Users/ang58gl/Documents/Data/MittlererRing_new.shp")
 
 # Define the grid size
-grid_size <- 200  # 100 meters
+grid_size <- 250  # 100 meters
 
 # Create a grid over the extent of the MR layer
 grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
@@ -503,7 +503,7 @@ for(i in 1: nrow(grid_pri)){
   grid_pri$Shannon[i] <- -sum(Subgrid$prop * log(Subgrid$prop))
   
   # Simpson Index
-  grid_pri$Simpson[i]<- sum(Subgrid$prop^2)
+  grid_pri$Simpson[i]<- 1-sum(Subgrid$prop^2)
   
   # Inverse Simpson Index
   grid_pri$InvSimp[i] <- 1 / sum(Subgrid$prop^2)
@@ -644,3 +644,286 @@ ggplot() +
   theme_minimal() +
   # Ensure the map uses the same CRS
   coord_sf(crs = st_crs(grid_pri))
+
+
+
+################################################################################
+# Differences of Indices between different sources
+
+grid_combined <- st_join(grid_rs, grid_cd, join = st_equals)
+
+
+grid_combined$Simp_dif <- grid_combined$Simpson.x-grid_combined$Simpson.y
+grid_combined$Shan_dif <- grid_combined$Shannon.x-grid_combined$Shannon.y
+grid_combined$Piel_dif <- grid_combined$Pielou.x-grid_combined$Pielou.y
+
+
+################################################################################
+# Differences of Indices between different sources
+
+grid_combined <- st_join(grid_combined, grid_pri, join = st_equals)
+
+grid_combined$Simp_pupri <- grid_combined$Simpson.x-grid_combined$Simpson
+grid_combined$Shan_pupri <- grid_combined$Shannon.x-grid_combined$Shannon
+grid_combined$Piel_pupri <- grid_combined$Pielou.x-grid_combined$Pielou
+
+
+################################################################################
+#
+# Omit NA values from the grid_combined dataset
+grid_combined_clean <- grid_combined %>% 
+  dplyr::filter(!is.na(Simp_dif))
+
+# Create a vertical histogram of Simpson Index from the grid_combined dataset
+ggplot(grid_combined_clean, aes(x = Simp_dif)) +
+  geom_histogram(aes(fill = ..x..), binwidth = 0.05, color = "black", alpha = 0.7) +
+  
+  # Add custom color palette for the fill
+  scale_fill_gradient2(low="#d01c8b", mid="#f7f7f7", high ="#4dac26", name="Difference in
+Simpson's Index") +
+  
+  # Flip the axes to make the histogram vertical
+  coord_flip() +
+  
+  # Labels and theme
+  labs(title = " ",
+       y = "Frequency",
+       x = "Difference of Simpson Index") +
+  theme_minimal()
+
+# Create a vertical histogram of Simpson Index from the grid_combined dataset
+ggplot(grid_combined, aes(x = Shan_dif)) +
+  geom_histogram(aes(fill = ..x..), binwidth = 0.05, color = "black", alpha = 0.7) +
+  
+  # Add custom color palette for the fill
+  scale_fill_gradient2(low="#d01c8b", mid="#f7f7f7", high ="#4dac26", name="Difference in
+Shannon Index") +
+  
+  # Flip the axes to make the histogram vertical
+  coord_flip() +
+  
+  # Labels and theme
+  labs(title = " ",
+       y = "Frequency",
+       x = "Difference of Shannon Index") +
+  theme_minimal()
+
+
+# Create a vertical histogram of Simpson Index from the grid_combined dataset
+ggplot(grid_combined, aes(x = Simp_pupri)) +
+  geom_histogram(aes(fill = ..x..), binwidth = 0.05, color = "black", alpha = 0.7) +
+  
+  # Add custom color palette for the fill
+  scale_fill_gradient2(low="#3790c7", mid="#f6eff7", high ="#016c59", name="Difference in
+Simpson's Index") +
+  
+  # Flip the axes to make the histogram vertical
+  coord_flip() +
+  
+  # Labels and theme
+  labs(title = " ",
+       y = "Frequency",
+       x = "Difference of Simpson Index") +
+  theme_minimal()
+
+
+
+
+
+# Create a vertical histogram of Simpson Index from the grid_combined dataset
+ggplot(grid_combined, aes(x = Shan_pupri)) +
+  geom_histogram(aes(fill = ..x..), binwidth = 0.05, color = "black", alpha = 0.7) +
+  
+  # Add custom color palette for the fill
+  scale_fill_gradient2(low="#3790c7", mid="#f6eff7", high ="#016c59", name="Difference in
+Simpson's Index") +
+  
+  # Flip the axes to make the histogram vertical
+  coord_flip() +
+  
+  # Labels and theme
+  labs(title = " ",
+       y = "Frequency",
+       x = "Difference of Simpson Index") +
+  theme_minimal()
+
+st_write(grid_combined, "D:/Paper_1/Diversity/Diversity_grid_corrected.shp")
+
+
+summary(grid_combined_clean)
+
+
+dif<-data.frame(grid_combined_clean$Simp_dif)
+
+
+dif_filtered <- dif %>%
+  filter(grid_combined_clean.Simp_dif < 0) #1 & grid_combined_clean.Simp_dif > -0.1)
+
+
+306/539*100
+
+123/539*100
+
+81/539*100
+
+49/539*100
+
+
+
+######################### Diversity for trees in public areas grid  (CADASTRE) #####################
+
+
+# Load your MR layer
+MR <- st_read("C:/Users/ang58gl/Documents/Data/MittlererRing_new.shp")
+
+# Define the grid size
+grid_size <- 250  # 100 meters
+
+# Create a grid over the extent of the MR layer
+grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
+
+# Convert grid to an sf object
+grid_cd <- st_sf(geometry = grid, crs = st_crs(rs_trees))
+
+######
+grid_cd$Richness <- NA
+grid_cd$Shannon <- NA
+grid_cd$Simpson <- NA
+grid_cd$InvSimp <- NA
+grid_cd$Pielou <- NA
+#grid_cd$Margalef <- NA
+#grid_cd$Menhi <- NA
+
+
+for(i in 1: nrow(grid_cd)){
+  
+  Subgrid <- st_intersection(grid_cd[i,],rs_trees_all) %>% as.data.frame() %>% select("t1_majorit") %>% na.omit() %>% table() %>% as.data.frame()
+  
+  # Apply threshold: only proceed if there are 3 or more trees
+  if (nrow(Subgrid) >= 3) {
+    
+    grid_cd$Richness[i] <- nrow(Subgrid)
+    
+    Subgrid$prop <- Subgrid$Freq / sum(Subgrid$Freq)
+    
+    grid_cd$Shannon[i] <- -sum(Subgrid$prop * log(Subgrid$prop))
+    
+    # Simpson Index
+    grid_cd$Simpson[i]<- 1-sum(Subgrid$prop^2)
+    
+    # Inverse Simpson Index
+    grid_cd$InvSimp[i] <- 1 / sum(Subgrid$prop^2)
+    
+    # Pielou's Evenness Index
+    grid_cd$Pielou[i] <- -sum(Subgrid$prop * log(Subgrid$prop)) / log(length(Subgrid$prop))
+    
+    # Margalef's Richness Index
+    #grid_cd$Margalef[i] <- (length(Subgrid$prop) - 1) / log(sum(Subgrid$Freq))
+    
+    # Menhinick's Index
+    # grid_cd$Menhi[i] <- length(Subgrid$prop) / sqrt(sum(Subgrid$Freq))
+  } else {
+    # If less than 3 trees, set the indices to NA for the cell
+    grid_cd$Richness[i] <- NA
+    grid_cd$Shannon[i] <- NA
+    grid_cd$Simpson[i] <- NA
+    grid_cd$InvSimp[i] <- NA
+    grid_cd$Pielou[i] <- NA
+  }
+}
+
+plot(grid_cd)
+
+
+
+######################### Diversity for trees in public areas grid  (CADASTRE) #####################
+# Create a new 'majority' column in the 'cadastre' dataset based on the 'GATTUNG' values
+cadastre_aggregated <- cadastre_aggregated %>%
+  mutate(majority = case_when(
+    GATTUNG == 52 ~ 1,
+    GATTUNG == 41 ~ 10,
+    GATTUNG == 2  ~ 6,
+    GATTUNG == 46 ~ 2,
+    GATTUNG == 3  ~ 4,
+    GATTUNG == 80 ~ 7,
+    TRUE ~ 7  # If none of the conditions are met, assign NA
+  ))
+
+cadastre_aggregated <- st_zm(cadastre_aggregated, drop = TRUE, what = "ZM")
+# Select the Gattung and geometry columns from cadastre
+cadastre_selected <- cadastre_aggregated %>%
+  select(majority, geometry)
+
+# Select the majority and geometry columns from rs_trees
+rs_trees_selected <- rs_trees %>%
+  select(majority = t1_majorit, geometry)
+
+
+# Stack the two datasets together
+stacked_sf <- rbind(cadastre_selected, rs_trees_selected)
+
+# Load your MR layer
+MR <- st_read("C:/Users/ang58gl/Documents/Data/MittlererRing_new.shp")
+
+# Define the grid size
+grid_size <- 250  # 100 meters
+
+# Create a grid over the extent of the MR layer
+grid <- st_make_grid(MR, cellsize = grid_size, square = TRUE)
+
+# Convert grid to an sf object
+grid_cdrs <- st_sf(geometry = grid, crs = st_crs(stacked_sf))
+
+######
+grid_cdrs$Richness <- NA
+grid_cdrs$Shannon <- NA
+grid_cdrs$Simpson <- NA
+grid_cdrs$InvSimp <- NA
+grid_cdrs$Pielou <- NA
+#grid_cdrs$Margalef <- NA
+#grid_cdrs$Menhi <- NA
+
+
+for(i in 1: nrow(grid_cdrs)){
+  
+  Subgrid <- st_intersection(grid_cdrs[i,],stacked_sf) %>% as.data.frame() %>% select("majority") %>% na.omit() %>% table() %>% as.data.frame()
+  
+  # Apply threshold: only proceed if there are 3 or more trees
+  if (nrow(Subgrid) >= 3) {
+    
+    grid_cdrs$Richness[i] <- nrow(Subgrid)
+    
+    Subgrid$prop <- Subgrid$Freq / sum(Subgrid$Freq)
+    
+    grid_cdrs$Shannon[i] <- -sum(Subgrid$prop * log(Subgrid$prop))
+    
+    # Simpson Index
+    grid_cdrs$Simpson[i]<- 1-sum(Subgrid$prop^2)
+    
+    # Inverse Simpson Index
+    grid_cdrs$InvSimp[i] <- 1 / sum(Subgrid$prop^2)
+    
+    # Pielou's Evenness Index
+    grid_cdrs$Pielou[i] <- -sum(Subgrid$prop * log(Subgrid$prop)) / log(length(Subgrid$prop))
+    
+    # Margalef's Richness Index
+    #grid_cdrs$Margalef[i] <- (length(Subgrid$prop) - 1) / log(sum(Subgrid$Freq))
+    
+    # Menhinick's Index
+    # grid_cdrs$Menhi[i] <- length(Subgrid$prop) / sqrt(sum(Subgrid$Freq))
+  } else {
+    # If less than 3 trees, set the indices to NA for the cell
+    grid_cdrs$Richness[i] <- NA
+    grid_cdrs$Shannon[i] <- NA
+    grid_cdrs$Simpson[i] <- NA
+    grid_cdrs$InvSimp[i] <- NA
+    grid_cdrs$Pielou[i] <- NA
+  }
+}
+
+plot(grid_cdrs)
+
+
+grid_new <- st_join(grid_cd, grid_cdrs, join = st_equals)
+
+st_write(grid_new, "D:/Paper_1/Diversity/Diversity_grid_all.shp")

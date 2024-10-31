@@ -4,7 +4,6 @@ library(pacman)
 library(sf)
 library(terra)
 library(raster)
-library(pacman)
 library(tidyverse)
 library(writexl)
 # Load Libraries
@@ -218,26 +217,26 @@ merged_trees$crown_lenght<-  ifelse(merged_trees$genus == 1,(exp(-0.950159509 + 
 
 data <- data %>%
   mutate(soil_sealing = case_when(
-    nutzart == "Bahnverkehr" ~ 10,
-    nutzart == "Fläche besonderer funktionaler Prägung" ~ 20,
-    nutzart == "Fläche gemischter Nutzung" ~ 25,
-    nutzart == "Fließgewässer" ~ 0,
-    nutzart == "Flugverkehr" ~ 0,
-    nutzart == "Friedhof" ~ 10,
-    nutzart == "Gehölz" ~ 0,
+    nutzart == "Bahnverkehr" ~ 75,
+    nutzart == "Fläche besonderer funktionaler Prägung" ~ 50,
+    nutzart == "Fläche gemischter Nutzung" ~ 60,
+    nutzart == "Fließgewässer" ~ 15,
+    nutzart == "Flugverkehr" ~ 90,
+    nutzart == "Friedhof" ~ 15,
+    nutzart == "Gehölz" ~ 25,
     nutzart == "Heide" ~ 0,
-    nutzart == "Industrie- und Gewerbefläche" ~ 35,
-    nutzart == "Landwirtschaft" ~ 0,
+    nutzart == "Industrie- und Gewerbefläche" ~ 85,
+    nutzart == "Landwirtschaft" ~ 10,
     nutzart == "Moor" ~ 0,
-    nutzart == "Platz" ~ 50,
-    nutzart == "Sport-, Freizeit- und Erholungsfläche" ~ 0,
-    nutzart == "Stehendes Gewässer" ~ 0,
-    nutzart == "Straßenverkehr" ~ 35,
+    nutzart == "Platz" ~ 80,
+    nutzart == "Sport-, Freizeit- und Erholungsfläche" ~ 35,
+    nutzart == "Stehendes Gewässer" ~ 10,
+    nutzart == "Straßenverkehr" ~ 75,
     nutzart == "Tagebau, Grube, Steinbruch" ~ 0,
     nutzart == "Unland/Vegetationslose Fläche" ~ 15,
     nutzart == "Wald" ~ 0,
-    nutzart == "Weg" ~ 0,
-    nutzart == "Wohnbaufläche" ~ 10))
+    nutzart == "Weg" ~ 65,
+    nutzart == "Wohnbaufläche" ~ 60))
 
 
 ################################################################################
@@ -379,7 +378,7 @@ names(input)<- c("city", "site", "latitude", "longitude", "TreeID", "SVF_E", "SV
                  "precipitation_Feb", "precipitation_Mar", "precipitation_Apr", "precipitation_May", "precipitation_Jun", "precipitation_Jul", "precipitation_Aug", "precipitation_Sep", "precipitation_Oct", "precipitation_Nov", "precipitation_Dez", "irrigation_start", "irrigation_end", "irrigation_amount")
 
 
-st_write(input, "D:/Test_MR/svf_data.csv")
+st_write(input, "D:/Soil_sealing/all_data.csv")
 
 write.csv(input, file="D:/Test_MR/RS_tree_all.csv")
 write.table(data.frame(input), file="D:/Test_MR/input_data_MR.txt", sep = "\t", row.names = FALSE)

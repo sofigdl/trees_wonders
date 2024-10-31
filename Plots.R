@@ -53,7 +53,7 @@ create_beautiful_radarchart(
 legend(
   x = "bottom", legend = rownames(df[-c(1,2),]), horiz = TRUE,
   bty = "n", pch = 20 , col = c("#FC4E07", "#357ba3", "#648f1e", "#a50026"),
-  text.col = "black", cex = 1.2, pt.cex = 1.5, y.intersp = 0.5
+  text.col = "black", cex = 1.2, pt.cex = 1.5, y.intersp = 0.3
 )
 
 par(op)
