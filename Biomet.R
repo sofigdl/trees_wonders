@@ -1,4 +1,4 @@
-install.packages("MASS")
+install.packages("ggpubr")
 library(sf)
 library(ggplot2)
 library(dplyr)
@@ -7,6 +7,7 @@ library(RColorBrewer)
 library(broom)
 library(ggpmisc)
 library(MASS)
+library(ggpubr)
 
 #----------------------------------------------------------------------------------------------------------
 #----------                               Data Preparation                                    -------------
@@ -240,11 +241,11 @@ ggplot(lst_by_class, aes(x = LU, y = lst, fill = LU)) +
 #Regression models
 
 # Plot the regression models and store model summaries
-gg<-ggplot(trees_landuse[trees_landuse$LU == "Residential",], aes(x = (as.numeric(percentage)), y = X_median, color = LU)) +
-  geom_point() +
-  labs(title = "Regression Models for Different Land Use Classes",
-       x = "Tree area (%)", y = "Mean LST") +
-  stat_poly_line() +
+gg<-ggplot(trees_landuse[trees_landuse$LU == "Residential",], aes(x = (as.numeric(percentage)), y = X_mean)) +
+  geom_point(color = "#d3692c") +
+  labs(title = "Residential",
+       x = "Tree canopy cover (%)", y = "Mean land surface temperature (°C)") +
+  stat_poly_line(color = "#d3692c") +
   stat_poly_eq() +
   scale_x_continuous(limits = c(0,100), expand = c(0,0)) +
   scale_y_continuous(limits = c(30,50), expand = c(0,0)) +
@@ -269,9 +270,145 @@ get_density <- function(x, y, ...) {
 
 trees_landuse2 <- trees_landuse[,c("nutzart","LU", "X_mean","X_median","percentage")]
 
+trees_landuse2$trees<-as.numeric(trees_landuse2$percentage)
+
 trees_landuse2 <- na.omit(trees_landuse2)
 trees_landuse2$densityplot <- get_density(x = (as.numeric(trees_landuse2$percentage)), y = trees_landuse2$X_median, n = 400)
 ggplot(trees_landuse2[trees_landuse2$LU=="Industrial",], aes(x = (as.numeric(percentage)), y = X_median,color = densityplot)) + geom_point() +
   scale_color_viridis() +
   theme_dark() +
   theme(panel.background = element_rect(fill = "black"))
+
+
+#--------------------------------------------------------------------------------
+
+p<-ggplot(trees_landuse2, aes(x=LU, y=X_mean, fill=LU)) +
+  geom_violin(trim=FALSE) +
+  stat_summary(fun.y=median, geom="point", size=2, color="black")+
+  scale_fill_manual(values=c("#23bdce", "#d6489b", "#7b8313", "#d3692c", "#6561da"))+
+  labs(x="Land use class", y = "Mean land surface temperature (°C)", size= 16)+theme_light()+
+  theme(legend.position = "none", axis.title=element_text(size=24), axis.text=element_text(size=20))+ ylim(31, 42)
+
+p
+
+ggplot(trees_landuse2, aes(x=LU, y=trees, fill=LU)) +
+  geom_violin(trim=FALSE) +
+  stat_summary(fun.y=median, geom="point", size=2, color="black")+
+  scale_fill_manual(values=c("#23bdce", "#d6489b", "#7b8313", "#d3692c", "#6561da"))+
+  labs(x="Land use class", y = "Tree canopy cover (%)")+theme_light()+
+  theme(legend.position = "none", axis.title=element_text(size=24), axis.text=element_text(size=20))+ ylim(0, 100)
+
+c
+
+#Regression models
+
+# Plot the regression models and store model summaries
+ggplot(trees_landuse[trees_landuse$LU == "Residential",], aes(x = (as.numeric(percentage)), y = X_mean)) +
+  geom_point(color = "#d3692c") +
+  labs(title = "Residential",
+       x = "Tree canopy cover (%)", y = "Mean land surface temperature (°C)") +
+  geom_smooth(method = "lm", se=FALSE, color = "#d3692c") +
+  stat_regline_equation(label.x = 70,label.y = 41.5, size =5, aes(label = ..eq.label..))+
+  stat_regline_equation(label.x = 70,label.y = 41, size =5, aes(label = ..rr.label..))+
+  scale_x_continuous(limits = c(0,100), expand = c(0,0)) +
+  scale_y_continuous(limits = c(30,42), expand = c(0,0)) +
+  theme(
+    text = element_text(size = 24),
+    plot.title = element_text(size = 40, face = "bold"),
+    axis.title=element_text(size=24),
+    axis.text = element_text(size=20),
+    legend.position = "none"
+  )+
+  theme_minimal()
+
+ggplot(trees_landuse[trees_landuse$LU == "Traffic",], aes(x = (as.numeric(percentage)), y = X_mean)) +
+  geom_point(color = "#6561da") +
+  labs(title = "Traffic",
+       x = "Tree canopy cover (%)", y = "Mean land surface temperature (°C)") +
+  geom_smooth(method = "lm", se=FALSE, color = "#6561da") +
+  stat_regline_equation(label.x = 70,label.y = 41.5, size =5, aes(label = ..eq.label..))+
+  stat_regline_equation(label.x = 70,label.y = 41, size =5, aes(label = ..rr.label..))+
+  scale_x_continuous(limits = c(0,100), expand = c(0,0)) +
+  scale_y_continuous(limits = c(30,42), expand = c(0,0)) +
+  theme(
+    text = element_text(size = 24),
+    plot.title = element_text(size = 40, face = "bold"),
+    axis.title=element_text(size=24),
+    axis.text = element_text(size=20),
+    legend.position = "none"
+  )+
+  theme_minimal()
+
+ggplot(trees_landuse[trees_landuse$LU == "Recreational",], aes(x = (as.numeric(percentage)), y = X_mean)) +
+  geom_point(color = "#7b8313") +
+  labs(title = "Recreational",
+       x = "Tree canopy cover (%)", y = "Mean land surface temperature (°C)") +
+  geom_smooth(method = "lm", se=FALSE, color = "#7b8313") +
+  stat_regline_equation(label.x = 70,label.y = 41.5, size =5, aes(label = ..eq.label..))+
+  stat_regline_equation(label.x = 70,label.y = 41, size =5, aes(label = ..rr.label..))+
+  scale_x_continuous(limits = c(0,100), expand = c(0,0)) +
+  scale_y_continuous(limits = c(30,42), expand = c(0,0)) +
+  theme(
+    text = element_text(size = 24),
+    plot.title = element_text(size = 40, face = "bold"),
+    axis.title=element_text(size=24),
+    axis.text = element_text(size=20),
+    legend.position = "none"
+  )+
+  theme_minimal()
+
+ggplot(trees_landuse[trees_landuse$LU == "Mixed",], aes(x = (as.numeric(percentage)), y = X_mean)) +
+  geom_point(color = "#d6489b") +
+  labs(title = "Mixed",
+       x = "Tree canopy cover (%)", y = "Mean land surface temperature (°C)") +
+  geom_smooth(method = "lm", se=FALSE, color = "#d6489b") +
+  stat_regline_equation(label.x = 70,label.y = 41.5, size =5, aes(label = ..eq.label..))+
+  stat_regline_equation(label.x = 70,label.y = 41, size =5, aes(label = ..rr.label..))+
+  scale_x_continuous(limits = c(0,100), expand = c(0,0)) +
+  scale_y_continuous(limits = c(30,42), expand = c(0,0)) +
+  theme(
+    text = element_text(size = 24),
+    plot.title = element_text(size = 40, face = "bold"),
+    axis.title=element_text(size=24),
+    axis.text = element_text(size=20),
+    legend.position = "none"
+  )+
+  theme_minimal()
+
+
+ggplot(trees_landuse[trees_landuse$LU == "Industrial",], aes(x = (as.numeric(percentage)), y = X_mean)) +
+  geom_point(color = "#23bdce") +
+  labs(title = "Industrial",
+       x = "Tree canopy cover (%)", y = "Mean land surface temperature (°C)") +
+  geom_smooth(method = "lm", se=FALSE, color = "#23bdce") +
+  stat_regline_equation(label.x = 60,label.y = 41.5, size =6, aes(label = ..eq.label..))+
+  stat_regline_equation(label.x = 60,label.y = 41, size =6, aes(label = ..rr.label..))+
+  scale_x_continuous(limits = c(0,105), expand = c(0,0)) +
+  scale_y_continuous(limits = c(30,42), expand = c(0,0)) +
+  theme(
+    text = element_text(size = 24),
+    plot.title = element_text(size = 40, face = "bold"),
+    axis.title=element_text(size=24),
+    axis.text = element_text(size=20),
+    legend.position = "none"
+  )+
+  theme_minimal()
+
+
+ggplot(trees_landuse, aes(x = (as.numeric(percentage)), y = X_mean))+#, color=LU)) +
+  geom_point(color="#1a1042") +
+  labs(x = "Tree canopy cover (%)", y = "Mean land surface temperature (°C)") +
+  geom_smooth(method = "lm", se=TRUE, color="#f97b5d", linewidth = 2) +
+  scale_fill_manual(values=c("#23bdce", "#d6489b", "#7b8313", "#d3692c", "#6561da"))+
+  stat_regline_equation(label.x = 75,label.y = 41.5, size =6, aes(label = ..eq.label..))+
+  stat_regline_equation(label.x = 75,label.y = 41, size =6, aes(label = ..rr.label..))+
+  scale_x_continuous(limits = c(0,105), expand = c(0,0)) +
+  scale_y_continuous(limits = c(31,42), expand = c(0,0)) +
+  theme_minimal(base_size = 18)+
+  theme(
+    plot.title = element_text(size = 32, face = "bold"),
+    axis.title=element_text(size=22),
+    axis.text = element_text(size=18),
+    legend.position = "none"
+  )
+

@@ -683,13 +683,21 @@ ggplot(grid_combined_clean, aes(x = Simp_dif)) +
 Simpson's Index") +
   
   # Flip the axes to make the histogram vertical
-  coord_flip() +
+  #coord_flip() +
   
   # Labels and theme
   labs(title = " ",
        y = "Frequency",
        x = "Difference of Simpson Index") +
-  theme_minimal()
+  theme_minimal()+
+  theme(
+    text = element_text(family = "serif"),
+    plot.title = element_text(size = 20, face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 14),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 14)
+  )
 
 # Create a vertical histogram of Simpson Index from the grid_combined dataset
 ggplot(grid_combined, aes(x = Shan_dif)) +

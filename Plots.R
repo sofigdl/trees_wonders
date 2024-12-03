@@ -25,7 +25,7 @@ rownames(max_min) <- c("Max", "Min")
 df <- rbind(max_min, data)
 
 # Reduce plot margin using par()
-op <- par(mar = c(0, 2, 1, 1))
+op <- par(family="serif", mar = c(0, 2, 1, 1))
 
 create_beautiful_radarchart <- function(data, color = "#00AFBB", 
                                         vlabels = colnames(data), vlcex = 2.0,
@@ -84,7 +84,7 @@ rownames(max_min) <- c("Max", "Min")
 df <- rbind(max_min, data)
 
 # Reduce plot margin using par()
-op <- par(mar = c(0, 2, 1, 1))
+op <- par(family="serif", mar = c(0, 2, 1, 1))
 
 create_beautiful_radarchart <- function(data, color = "#00AFBB", 
                                         vlabels = colnames(data), vlcex = 2.0,
@@ -143,7 +143,7 @@ rownames(max_min) <- c("Max", "Min")
 df <- rbind(max_min, data)
 
 # Reduce plot margin using par()
-op <- par(mar = c(0, 2, 1, 1))
+op <- par(family="serif", mar = c(2, 2, 1, 1))
 
 create_beautiful_radarchart <- function(data, color = "#00AFBB", 
                                         vlabels = colnames(data), vlcex = 2.0,
@@ -174,7 +174,7 @@ legend(
   text.col = "black", cex = 1.2, pt.cex = 1.5, y.intersp = 0.5
 )
 
-par(op)
+Recpar(op)
 
 
 
