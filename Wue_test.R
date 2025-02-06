@@ -1,32 +1,20 @@
+#Test for the central area of Würzburg
 install.packages("pacman")
+library(lidR)
 #Install packages
 pacman::p_load(car, sf, terra, dplyr, ggplot2, RStoolbox, raster, rgeos, lidR, EBImage, caTools)
 
 ################################################################################
 #                              Tree segmentation
 ################################################################################
-# Define the folder containing the images
-folder_path <- "D:/Wurzburg/CIR"  # Replace with your folder path
 
-# List all files in the folder that start with "dop20datenabgabe" and have a ".tif" extension
-file_list <- list.files(folder_path, pattern = "^dop20datenabgabe_.*\\.tif$", full.names = TRUE)
-
-# Dynamically load rasters and assign unique variable names
-raster_list <- list()
-for (i in seq_along(file_list)) {
-  # Load the raster
-  raster <- rast(file_list[i])
-  
-  # Assign a unique name to the raster (e.g., cir_6, cir_5, etc.)
-  raster_name <- paste0("cir_", i)
-  assign(raster_name, raster)  # Assign the raster to a variable in the environment
-  
-  # Store the raster in a list for merging
-  raster_list[[i]] <- raster
-}
-
-# Merge all rasters
-cir <- do.call(merge, raster_list)
+#Load rasters
+cir_6<-rast("D:/Wurzburg/CIR/dop20datenabgabe_6.tif")
+cir_5<-rast("D:/Wurzburg/CIR/dop20datenabgabe_5.tif")
+cir_1<-rast("D:/Wurzburg/CIR/dop20datenabgabe_1.tif")
+cir_12<-rast("D:/Wurzburg/CIR/dop20datenabgabe_12.tif")
+# Create the mosaic
+cir <- merge(cir_6, cir_5, cir_1, cir_12)
 plot(cir, col=rev(terrain.colors(100)), main="CIR")
 
 # Assuming the CIR bands are: Red = Band 1, NIR = Band 4
@@ -35,106 +23,146 @@ nir_band <- cir[[1]]  # NIR band
 
 # Calculate NDVI
 ndvi <- (nir_band - red_band) / (nir_band + red_band)
+ndvi[is.nan(ndvi)] <- NA  # Remove NaN values
 plot(ndvi, col=rev(terrain.colors(100)), main="NDVI")
 
-ndvi_filter<-as.numeric(ndvi>0.1)
-plot(ndvi_filter, col=rev(terrain.colors(100)), main="NDVI")
+# Apply a median filter to reduce NDVI noise
+ndvi_filtered <- focal(ndvi, w = matrix(1, 3, 3), fun = median, na.policy = "omit")
+plot(ndvi_filtered, col=rev(terrain.colors(100)), main="Smoothed NDVI")
+
+# Apply threshold to NDVI
+ndvi_mask <- ndvi_filtered > 0.1
+plot(ndvi_mask, main="NDVI Mask (Trees)")
 
 
 #-------------------------------------------------------------------------------
 
-# Define the folder containing the DSM rasters
-folder_path <- "D:/Wurzburg/DSM"
-
-# List all DSM files in the folder matching the pattern (e.g., "32567_*_20_DOM.tif")
-dsm_file_list <- list.files(folder_path, pattern = "^325.*_20_DOM\\.tif$", full.names = TRUE)
-
-# Dynamically load DSM rasters and assign unique variable names
-dsm_raster_list <- list()
-for (i in seq_along(dsm_file_list)) {
-  # Load the raster
-  raster <- rast(dsm_file_list[i])
-  
-  # Assign a unique name to the raster (e.g., dsm_1, dsm_2, etc.)
-  raster_name <- paste0("dsm_", i)
-  assign(raster_name, raster)  # Assign the raster to a variable in the environment
-  
-  # Store the raster in a list for merging
-  dsm_raster_list[[i]] <- raster
-}
-
-# Merge all DSM rasters
-dsm <- do.call(merge, dsm_raster_list)
-plot(dsm, col=rev(terrain.colors(100)), main="DSM")
-#------------------------------------------------------------------------------
-# Define the folder containing the DTM rasters
-folder_path <- "D:/Wurzburg/DTM"
-
-# List all DSM files in the folder matching the pattern (e.g., "32567_*_20_DOM.tif")
-dtm_file_list <- list.files(folder_path, pattern = "^56.*\\.tif$", full.names = TRUE)
-
-# Dynamically load DSM rasters and assign unique variable names
-dtm_raster_list <- list()
-for (i in seq_along(dtm_file_list)) {
-  # Load the raster
-  raster <- rast(dtm_file_list[i])
-  
-  # Assign a unique name to the raster (e.g., dsm_1, dsm_2, etc.)
-  raster_name <- paste0("dtm_", i)
-  assign(raster_name, raster)  # Assign the raster to a variable in the environment
-  
-  # Store the raster in a list for merging
-  dtm_raster_list[[i]] <- raster
-}
-
-# Merge all DSM rasters
-dtm <- do.call(merge, dtm_raster_list)
-
+# Load the DSM rasters:
+dsm_6 <- rast("D:/Wurzburg/DSM/32567_5516_20_DOM.tif")
+dsm_5 <- rast("D:/Wurzburg/DSM/32567_5515_20_DOM.tif")
+dsm_12 <- rast("D:/Wurzburg/DSM/32566_5516_20_DOM.tif")
+dsm_1 <- rast("D:/Wurzburg/DSM/32566_5515_20_DOM.tif")
+# Create the mosaic
+dsm <- merge(dsm_6, dsm_5, dsm_1, dsm_12)
 
 #-------------------------------------------------------------------------------
 
-# Find the intersection of their extents
-common_extent <- intersect(ext(dtm), intersect(ext(dsm), ext(ndvi)))
+# Load the DSM rasters:
+dtm_6 <- rast("D:/Wurzburg/DTM/566_5516.tif")
+dtm_5 <- rast("D:/Wurzburg/DTM/566_5515.tif")
+dtm_1 <- rast("D:/Wurzburg/DTM/567_5516.tif")
+dtm_12 <- rast("D:/Wurzburg/DTM/567_5515.tif")
+# Create the mosaic
+dtm <- merge(dtm_6, dtm_5, dtm_12, dtm_1)
 
-# Crop the rasters to the common extent
-dtm_clipped <- crop(dtm, common_extent)
-dsm_clipped <- crop(dsm, common_extent)
-ndvi_clipped <- crop(ndvi_filter, common_extent)
-
-# Resample the DTM to match the DSM resolution
-dtm_resampled <- resample(dtm_clipped, dsm_clipped, method="bilinear")  # Choose "bilinear" for smoother results
+#-------------------------------------------------------------------------------
+# Ensure DSM and DTM are aligned and have the same resolution
+dtm_resampled <- resample(dtm, dsm)
 
 # Calculate the Canopy Height Model (CHM)
-ndsm <- dsm_clipped - dtm_resampled
+ndsm <- dsm - dtm_resampled
+ndsm[ndsm < 0] <- 0  # Remove negative values
 plot(ndsm)
 
-chm<-ndsm*ndvi_clipped
+#-------------------------------------------------------------------------------
 
+chm<-ndsm*ndvi_mask
 plot(chm,  col=rev(terrain.colors(100)), main="CHM")
 
+
+#test 1 #
 # Apply the threshold
 chm_threshold <- classify(chm, matrix(c(-Inf, 2, NA), ncol=3, byrow=TRUE))
+# Plot the thresholded CHM
+plot(chm_threshold, col=terrain.colors(100), main="CHM (Threshold > 2 m)")
+
+writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test1.tif")
+
+
+#test 2 #
+# Smooth CHM using focal mean filter to remove small artifacts
+chm_smoothed <- focal(chm, w = matrix(1, 3, 3), fun = mean, na.policy = "omit")
+plot(chm_smoothed, col=terrain.colors(100), main="Smoothed CHM")
+
+# Apply the threshold
+chm_threshold <- classify(chm_smoothed, matrix(c(-Inf, 2, NA), ncol=3, byrow=TRUE))
 
 # Plot the thresholded CHM
-plot(chm_smoothed, col=terrain.colors(100), main="CHM (Threshold > 2 m)")
+plot(chm_threshold, col=terrain.colors(100), main="CHM (Threshold > 2 m)")
 
+writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test2.tif")
+
+
+#test 3#
 #We smooth the chm
 kernel <- matrix(1,3,3)
-chm_smoothed <- terra::focal(chm_threshold, w = kernel, fun = median, na.rm = TRUE)
-writeRaster(chm_smoothed, "D:/Wurzburg/Segments/chm_smoothed_wue.tif")
-chm_smoothed <- rast("D:/Wurzburg/Segments/chm_smoothed_wue.tif")
+chm_smoothed <- terra::focal(chm, w = kernel, fun = median, na.rm = TRUE)
+# Apply the threshold
+chm_threshold <- classify(chm_smoothed, matrix(c(-Inf, 2, NA), ncol=3, byrow=TRUE))
+writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test3.tif")
 
-#locate the tree tops
-ttops_2<-locate_trees(chm_smoothed, lmf(ws=5, hmin=2, shape="circular"))
-plot(ttops_2, add=TRUE)
+#test 4#
+#We smooth the chm
+kernel <- matrix(1,3,3)
+chm_smoothed <- terra::focal(chm, w = kernel, fun = median, na.rm = TRUE)
+# Apply the threshold
+chm_threshold <- classify(chm_smoothed, matrix(c(-Inf, 1.5, NA), ncol=3, byrow=TRUE))
+writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test4.tif")
 
+#------------------------------------------------------------------------------------------
+# Define the VWF function
+vwf_function <- function(chm_height) {
+  a <- 0.5  # Minimum radius (in meters)
+  b <- 0.05  # Scaling factor per meter of height
+  return(a + b * chm_height)
+}
 
-#Segment the image
-silva<-silva2016(chm_smoothed, ttops_2, max_cr_factor = 0.5, exclusion = 0.3)
+# Apply VWF function to CHM
+vwf_raster <- vwf_function(values(chm_threshold))
+
+# Convert to raster format
+vwf_raster <- setValues(chm_threshold, vwf_raster)
+
+# Plot VWF raster
+plot(vwf_raster, col = terrain.colors(100), main = "Variable Window Size Based on Height")
+
+tree_tops <- locate_trees(chm_threshold, lmf(ws = vwf_function,  hmin = 2, shape = "circular"))
+
+# Apply Local Maxima Filtering (LMF) to detect tree tops
+tree_tops <- locate_trees(chm_threshold, lmf(ws = 5, hmin = 2))
+#st_write(tree_tops, "D:/Wurzburg/Segments/Test_1/TreeTops_t2.gpkg")
+
+# Plot CHM with detected tree tops
+plot(chm_threshold, col = terrain.colors(100), main = "Tree Tops Detection")
+points(tree_tops, col = "red", pch = 16)
+
+# Segment trees using the watershed algorithm
+silva <- silva2016(chm_threshold, tree_tops, max_cr_factor = 0.5, exclusion = 0.3)
 silva_crowns<-silva()
-
 plot(silva_crowns, col=pastel.colors(200))
-#writeRaster(silva_crowns, "D:/Wurzburg/Segments/silva_crowns_t4.tif")
+writeRaster(silva_crowns, "D:/Wurzburg/Segments/Test_1/silva_crowns_t2.tif")
+
+
+# Plot segmented tree crowns
+plot(chm_threshold, col = terrain.colors(100), main = "Segmented Tree Crowns")
+plot(tree_crowns, add = TRUE, border = "red", lwd = 1.2)
+
+# Convert segmented tree crowns to polygons
+tree_polygons <- as.polygons(silva_crowns)
+
+
+# Try different window sizes
+#ws_values <- c(3, 5, 7, 10)  # Test different window sizes
+
+
+#for (ws in ws_values) {
+#  tree_tops <- locate_trees(chm_threshold, lmf(ws = ws, hmin = 2))
+#  plot(chm_threshold, col = terrain.colors(100), main = paste("Tree Tops - ws =", ws))
+#  points(tree_tops, col = "red", pch = 16)
+#}
+
+
+#--------------------------------------------------------------------------------
 
 #polygonize
 
@@ -181,9 +209,8 @@ silva_filtered <- silva_polygons[silva_polygons$intersection_ratio <= 0.75, ]# K
 silva_filtered <- silva_filtered[silva_filtered$area_total >= units::set_units(2, m^2), ]
 
 
-plot(rgb, col=rev(terrain.colors(100)), main="RGB")
+plot(cir, col=rev(terrain.colors(100)), main="RGB")
 plot(silva_filtered, add=TRUE)
-
 
 
 ################################################################################
@@ -277,8 +304,5 @@ centroids$max <- max_lengths
 
 silva_filtered$diam<-(centroids$mean*2)
 
-st_write(silva_filtered, "D:/Wurzburg/Segments/ringpark_1.shp")
-################################################################################
-
-
+st_write(silva_filtered, "D:/Wurzburg/Segments/wue_center_t1.shp")
 
