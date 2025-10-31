@@ -1,4 +1,4 @@
-install.packages("ggpubr")
+install.packages("viridis")
 library(sf)
 library(ggplot2)
 library(dplyr)
@@ -24,6 +24,9 @@ land_use<-st_read("D:/BIOMET/LST/D_2020.gpkg")
 tree_points <-st_read("D:/Trees_data/Mittel_ring_baüme_Tobias.gpkg")
 tree_segments <- st_read("D:/Trees_data/Tree_segments_MR.gpkg")
 
+trees_points<- read.csv("D:/Simulations/All_trees.csv")
+trees_points<- st_as_sf(trees_joint, coords = c("Lon", "Lat"), crs=4326)
+  
 # Ensure both layers have the same coordinate reference system (CRS)
 tree_points <- st_transform(tree_points, st_crs(land_use))
 # Ensure both layers have the same coordinate reference system (CRS)
@@ -31,12 +34,52 @@ tree_segments <- st_transform(tree_segments, st_crs(land_use))
 
 
 #Perform spatial join between points and land use
-trees_joint <- st_join(tree_points, land_use, join = st_within)
+trees_points <- st_transform(trees_points, crs = 32632)
+trees_joint <- st_join(trees_points, land_use, join = st_within)
 
 #Count points in each polygon
 tree_counts <- trees_joint %>%
   group_by(gml_id) %>%
   summarize(point_count = n())
+
+# Calculate mean height for each polygon
+mean_height <- trees_joint %>%
+  group_by(gml_id) %>%
+  summarize(mean_height = mean(height, na.rm = TRUE))
+
+# Calculate mean CPA for each polygon
+mean_CPA <- trees_joint %>%
+  group_by(gml_id) %>%
+  summarize(mean_cpa = mean(CPA, na.rm = TRUE))
+
+# Calculate mean dbh for each polygon
+mean_dbh <- trees_joint %>%
+  group_by(gml_id) %>%
+  summarize(mean_dbh = mean(dbh, na.rm = TRUE))
+
+# Calculate mean cooling for each polygon
+mean_cool_sh <- trees_joint %>%
+  group_by(gml_id) %>%
+  summarize(mean_shading = mean(cool.sh..su, na.rm = TRUE))
+
+# Calculate mean cooling for each polygon
+mean_cool_tr <- trees_joint %>%
+  group_by(gml_id) %>%
+  summarize(mean_transpiration = mean(cool.tr..su, na.rm = TRUE))
+
+# Join the datasets by gml_id
+tree_stats <- tree_counts %>%
+  st_join(mean_height, by = "gml_id")%>%
+  st_join(mean_CPA, by = "gml_id")%>%
+  st_join(mean_dbh, by = "gml_id")%>%
+  st_join(mean_cool_sh, by = "gml_id")%>%
+  st_join(mean_cool_tr, by = "gml_id")
+
+
+cleaned_data <- tree_stats %>% 
+  dplyr::select(1,2,3,5,7,9,11,13)
+    
+trees_landuse<-st_join(land_use, cleaned_data, by ="gml_id")
 
 #------------------------------------
 
@@ -411,4 +454,84 @@ ggplot(trees_landuse, aes(x = (as.numeric(percentage)), y = X_mean))+#, color=LU
     axis.text = element_text(size=18),
     legend.position = "none"
   )
+
+
+
+#---------------------------------------------------------------------------------
+
+ggplot(trees_landuse, aes(x = (as.numeric(mean_height)), y = X_mean,  color = LU))+
+  geom_point(alpha = 0.4)+
+  labs(x = "Mean height (m)",  y = "Mean land surface temperature (°C)", legend = "Land Use") +
+  #geom_smooth(method = "lm", formula = y ~ poly(x, 3), color = "black", se = FALSE) +
+ 
+  scale_color_manual(values=c(
+    "Residential" = "#B53022", 
+    "Traffic" = "#323432", 
+    "Recreational" = "#81953C", 
+    "Industrial" = "#DD6E42", 
+    "Mixed" = "#FFBC42"))+
+  #stat_regline_equation(label.x = 75,label.y = 41.5, size =6, aes(label = ..eq.label..))+
+  #stat_regline_equation(label.x = 75,label.y = 41, size =6, aes(label = ..rr.label..))+
+  scale_x_continuous(limits = c(0,40), expand = c(0,0)) +
+  scale_y_continuous(limits = c(31,42), expand = c(0,0)) +
+  theme_classic(base_size = 18)+
+  theme(
+    plot.title = element_text(size = 32, face = "bold"),
+    axis.title=element_text(size=22),
+    axis.text = element_text(size=18)
+  )+annotate("text", x = 25, y = 41, label = paste("r =-0.44"))
+ 
+
+
+
+  ggplot(trees_landuse, aes(x = (as.numeric(mean_dbh)), y = X_mean,  color = LU))+
+    geom_point(alpha = 0.4)+
+    labs(x = "Mean dbh (cm)",  y = "Mean land surface temperature (°C)", legend = "Land Use") +
+    #geom_smooth(method = "lm", formula = y ~ poly(x, 3), color = "black", se = FALSE) +
+    
+    scale_color_manual(values=c(
+      "Residential" = "#B53022", 
+      "Traffic" = "#323432", 
+      "Recreational" = "#81953C", 
+      "Industrial" = "#DD6E42", 
+      "Mixed" = "#FFBC42"))+
+    #stat_regline_equation(label.x = 75,label.y = 41.5, size =6, aes(label = ..eq.label..))+
+    #stat_regline_equation(label.x = 75,label.y = 41, size =6, aes(label = ..rr.label..))+
+    #scale_x_continuous(limits = c(0,40), expand = c(0,0)) +
+    scale_y_continuous(limits = c(31,42), expand = c(0,0)) +
+    theme_classic(base_size = 18)+
+    theme(
+      plot.title = element_text(size = 32, face = "bold"),
+      axis.title=element_text(size=22),
+      axis.text = element_text(size=18)
+    )+annotate("text", x = 100, y = 41, label = paste("r =-0.54"))
+  
+  cor.test(trees_landuse$mean_dbh, trees_landuse$X_mean)
+  
+  
+ggplot(trees_landuse, aes(x = (as.numeric(mean_shading)), y = X_mean,  color = LU))+
+    geom_point(alpha = 0.4)+
+    labs(x = "Mean CPA (cm)",  y = "Mean land surface temperature (°C)", legend = "Land Use") +
+    #geom_smooth(method = "lm", formula = y ~ poly(x, 3), color = "black", se = FALSE) +
+    
+    scale_color_manual(values=c(
+      "Residential" = "#B53022", 
+      "Traffic" = "#323432", 
+      "Recreational" = "#81953C", 
+      "Industrial" = "#DD6E42", 
+      "Mixed" = "#FFBC42"))+
+    #stat_regline_equation(label.x = 75,label.y = 41.5, size =6, aes(label = ..eq.label..))+
+    #stat_regline_equation(label.x = 75,label.y = 41, size =6, aes(label = ..rr.label..))+
+    scale_x_continuous(limits = c(0,150000), expand = c(0,0)) +
+    scale_y_continuous(limits = c(31,42), expand = c(0,0)) +
+    theme_classic(base_size = 18)+
+    theme(
+      plot.title = element_text(size = 32, face = "bold"),
+      axis.title=element_text(size=22),
+      axis.text = element_text(size=18)
+    )+annotate("text", x = 150000, y = 41, label = paste("r =-0.56"))
+  
+  cor.test(trees_landuse$mean_cpa, trees_landuse$X_mean)
+  
+
 

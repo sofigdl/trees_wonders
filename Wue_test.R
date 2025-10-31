@@ -1,18 +1,20 @@
 #Test for the central area of Würzburg
 install.packages("pacman")
+install.packages('BiocManager')
 library(lidR)
 #Install packages
-pacman::p_load(car, sf, terra, dplyr, ggplot2, RStoolbox, raster, rgeos, lidR, EBImage, caTools)
+pacman::p_load(car, sf, terra, dplyr, ggplot2, RStoolbox, raster, lidR, EBImage, caTools, FNN, RANN)
 
 ################################################################################
 #                              Tree segmentation
 ################################################################################
 
 #Load rasters
-cir_6<-rast("D:/Wurzburg/CIR/dop20datenabgabe_6.tif")
-cir_5<-rast("D:/Wurzburg/CIR/dop20datenabgabe_5.tif")
-cir_1<-rast("D:/Wurzburg/CIR/dop20datenabgabe_1.tif")
-cir_12<-rast("D:/Wurzburg/CIR/dop20datenabgabe_12.tif")
+cir_6<-rast("D:/Wurzburg/CIR/566_5515.tif")
+cir_5<-rast("D:/Wurzburg/CIR/566_5516.tif")
+cir_1<-rast("D:/Wurzburg/CIR/567_5515.tif")
+cir_12<-rast("D:/Wurzburg/CIR/567_5516.tif")
+
 # Create the mosaic
 cir <- merge(cir_6, cir_5, cir_1, cir_12)
 plot(cir, col=rev(terrain.colors(100)), main="CIR")
@@ -76,7 +78,7 @@ chm_threshold <- classify(chm, matrix(c(-Inf, 2, NA), ncol=3, byrow=TRUE))
 # Plot the thresholded CHM
 plot(chm_threshold, col=terrain.colors(100), main="CHM (Threshold > 2 m)")
 
-writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test1.tif")
+#writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test1.tif")
 
 
 #test 2 #
@@ -90,7 +92,7 @@ chm_threshold <- classify(chm_smoothed, matrix(c(-Inf, 2, NA), ncol=3, byrow=TRU
 # Plot the thresholded CHM
 plot(chm_threshold, col=terrain.colors(100), main="CHM (Threshold > 2 m)")
 
-writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test2.tif")
+#writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test2.tif")
 
 
 #test 3#
@@ -99,7 +101,7 @@ kernel <- matrix(1,3,3)
 chm_smoothed <- terra::focal(chm, w = kernel, fun = median, na.rm = TRUE)
 # Apply the threshold
 chm_threshold <- classify(chm_smoothed, matrix(c(-Inf, 2, NA), ncol=3, byrow=TRUE))
-writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test3.tif")
+#writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test3.tif")
 
 #test 4#
 #We smooth the chm
@@ -107,30 +109,22 @@ kernel <- matrix(1,3,3)
 chm_smoothed <- terra::focal(chm, w = kernel, fun = median, na.rm = TRUE)
 # Apply the threshold
 chm_threshold <- classify(chm_smoothed, matrix(c(-Inf, 1.5, NA), ncol=3, byrow=TRUE))
-writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test4.tif")
+#writeRaster(chm_threshold, "D:/Wurzburg/Segments/chm_test4.tif")
 
 #------------------------------------------------------------------------------------------
 # Define the VWF function
 vwf_function <- function(chm_height) {
-  a <- 0.5  # Minimum radius (in meters)
-  b <- 0.05  # Scaling factor per meter of height
+  a <- 2  # Minimum radius (in meters)
+  b <- 0.5  # Scaling factor per meter of height
   return(a + b * chm_height)
 }
 
-# Apply VWF function to CHM
-vwf_raster <- vwf_function(values(chm_threshold))
 
-# Convert to raster format
-vwf_raster <- setValues(chm_threshold, vwf_raster)
-
-# Plot VWF raster
-plot(vwf_raster, col = terrain.colors(100), main = "Variable Window Size Based on Height")
-
-tree_tops <- locate_trees(chm_threshold, lmf(ws = vwf_function,  hmin = 2, shape = "circular"))
+tree_tops <- locate_trees(chm_threshold, lmf(ws = vwf_function,  hmin = 1, shape = "circular"))
 
 # Apply Local Maxima Filtering (LMF) to detect tree tops
-tree_tops <- locate_trees(chm_threshold, lmf(ws = 5, hmin = 2))
-#st_write(tree_tops, "D:/Wurzburg/Segments/Test_1/TreeTops_t2.gpkg")
+tree_tops <- locate_trees(chm_threshold, lmf(ws = 5, hmin = 1, shape = "circular"))
+st_write(tree_tops, "D:/Wurzburg/Segments/Test_1/TreeTops_t5.gpkg")
 
 # Plot CHM with detected tree tops
 plot(chm_threshold, col = terrain.colors(100), main = "Tree Tops Detection")
@@ -140,27 +134,14 @@ points(tree_tops, col = "red", pch = 16)
 silva <- silva2016(chm_threshold, tree_tops, max_cr_factor = 0.5, exclusion = 0.3)
 silva_crowns<-silva()
 plot(silva_crowns, col=pastel.colors(200))
-writeRaster(silva_crowns, "D:/Wurzburg/Segments/Test_1/silva_crowns_t2.tif")
+#writeRaster(silva_crowns, "D:/Wurzburg/Segments/Test_1/silva_crowns_t3.tif")
 
 
-# Plot segmented tree crowns
-plot(chm_threshold, col = terrain.colors(100), main = "Segmented Tree Crowns")
-plot(tree_crowns, add = TRUE, border = "red", lwd = 1.2)
+# Test DalPonte - did not work 
 
-# Convert segmented tree crowns to polygons
-tree_polygons <- as.polygons(silva_crowns)
-
-
-# Try different window sizes
-#ws_values <- c(3, 5, 7, 10)  # Test different window sizes
-
-
-#for (ws in ws_values) {
-#  tree_tops <- locate_trees(chm_threshold, lmf(ws = ws, hmin = 2))
-#  plot(chm_threshold, col = terrain.colors(100), main = paste("Tree Tops - ws =", ws))
-#  points(tree_tops, col = "red", pch = 16)
-#}
-
+#dalponte<-dalponte2016(chm_threshold, tree_tops, th_tree=1.5, th_seed = 0.2, th_cr = 0.25,)
+#dalponte_crowns<-dalponte()
+#plot(dalponte_crowns, col=pastel.colors(200))
 
 #--------------------------------------------------------------------------------
 
@@ -172,6 +153,7 @@ silva_polygons <- st_as_sf(silva_polygons)  # Convert to sf object for easier ha
 # Step 2: Convert Multi-Part to Single-Part
 silva_polygons <- st_cast(silva_polygons, "POLYGON")  # Split multi-part polygons into single parts
 
+#st_write(silva_polygons, "D:/Wurzburg/Segments/Test_1/silva_polygons_t3.gpkg")
 # Add unique I
 plot(silva_polygons)
 
@@ -205,11 +187,11 @@ silva_polygons$area_intersect[is.na(silva_polygons$area_intersect)] <- units::se
 
 # Calculate intersection ratio 
 silva_polygons$intersection_ratio <- as.numeric(silva_polygons$area_intersect) / as.numeric(silva_polygons$area_total)
-silva_filtered <- silva_polygons[silva_polygons$intersection_ratio <= 0.75, ]# Keep polygons with ≤80% overlap
-silva_filtered <- silva_filtered[silva_filtered$area_total >= units::set_units(2, m^2), ]
+silva_filtered <- silva_polygons[silva_polygons$intersection_ratio <= 0.75, ]# Keep polygons with ≤75% overlap
+silva_filtered <- silva_filtered[silva_filtered$area_total >= units::set_units(1, m^2), ]
 
 
-plot(cir, col=rev(terrain.colors(100)), main="RGB")
+plot(cir$`566_5515_1`, col=rev(terrain.colors(100)), main="RGB")
 plot(silva_filtered, add=TRUE)
 
 
@@ -218,8 +200,8 @@ plot(silva_filtered, add=TRUE)
 ################################################################################
 
 pcth <- function(x, p=0.90, na.rm = TRUE) { quantile(x, p, na.rm = na.rm) }
-silva_filtered$height <- (terra::extract(chm_threshold, silva_filtered, fun=pcth))[2]
-
+silva_filtered$height <- (terra::extract(chm_threshold, silva_filtered, fun=pcth))[,2]
+test<-terra::extract(chm_threshold, silva_filtered, fun=pcth)
 
 names(silva_filtered)
 
@@ -304,5 +286,103 @@ centroids$max <- max_lengths
 
 silva_filtered$diam<-(centroids$mean*2)
 
-st_write(silva_filtered, "D:/Wurzburg/Segments/wue_center_t1.shp")
+st_write(silva_filtered, "D:/Wurzburg/Segments/wue_center_t2_full.shp")
+
+
+################################################################################
+#                           Accuracy assessment
+################################################################################
+#tree_tops<-st_read("D:/Wurzburg/Segments/Test_1/TreeTops_t4.gpkg")
+silva_filtered<-st_read("D:/Wurzburg/Segments/wue_center_t1_full.shp")
+cadastre<-st_read("D:/Wurzburg/cadastre_test.gpkg")
+
+#-------------------------------------------------------------------------------
+#Count trees in each dataset
+
+count_polygons<- nrow(silva_filtered)
+count_cadastre<- nrow(cadastre)
+
+#-------------------------------------------------------------------------------
+#Estimate nearest distance#
+# Extract centroids of silva_crowns polygons
+silva_centroids <- st_centroid(silva_filtered)
+
+# Convert centroids to coordinates
+silva_coords <- st_coordinates(silva_centroids)
+
+# Convert coordinates to matrices for nn search
+cadastre_coords <- st_coordinates(cadastre)
+
+# Find the nearest cadastre point for each silva polygon
+nn_index <- nn2(cadastre_coords, silva_coords, k = 1)  # k = 1 ensures only one match
+
+# Extract the corresponding cadastre points
+nearest_cadastre <- cadastre[nn_index$nn.idx, ]
+
+# Add nearest cadastre ID and distance to silva_filtered
+silva_filtered$nearest_cadastre_id <- nearest_cadastre$cadastre_id  # Assuming cadastre has an ID column
+silva_filtered$nearest_distance <- nn_index$nn.dists  # Store distances
+
+# Define match threshold (e.g., 2m)
+threshold <- 2
+
+# Identify one-to-one matches
+cadastre$matched_tree_tops <- cadastre$nn_distance_tree_tops <= threshold
+
+# Count matches
+one_to_one_matches_tree_tops <- sum(cadastre$matched_tree_tops)
+
+cat("One-to-one matches (tree_tops):", one_to_one_matches_tree_tops, "\n")
+
+# Summary statistics
+summary_stats <- summary(cadastre$nn_distance)
+
+#--------------------------------------------------------------------------------
+#Tree metrics
+
+#I joined the cadastre and the rs crowns in qgis qith counting points and join by location only for the one-to-one matches
+one_to_one<-st_read("D:/Wurzburg/Validation/one-to-one-mit-kat.gpkg")
+
+ggplot(one_to_one, aes(x = height, y = as.numeric(baumhoehe))) +
+  geom_point(color = "#2BC38A", size = 3, alpha = 0.7) +  # Customize point size and transparency
+  geom_smooth(method = "lm", color = "#1F7A5C", fill = "#A7E6CE", se = TRUE, linetype = "solid") +
+  labs(#title = "Remote sensing height vs. Cadastre height",
+       x = "RS height (m)",
+       y = "Cadastre height (m)") +
+  theme_minimal(base_size = 14) +  # Clean theme with larger text
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))  # Centered and bold title
+
+
+ggplot(one_to_one, aes(x = diam, y = as.numeric(kronenbrei))) +
+  geom_point(color = "#00658B", size = 3, alpha = 0.7) +  # Customize point size and transparency
+  geom_smooth(method = "lm", color = "#1F7A5C", fill = "#A7E6CE", se = TRUE, linetype = "solid") +
+  labs(#title = "Remote sensing diameter vs. Cadastre diameter",
+       x = "RS diameter (m)",
+       y = "Cadastre diameter (m)") +
+  theme_minimal(base_size = 14) +  # Clean theme with larger text
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))  # Centered and bold title
+
+#--------------------------------------------------------------------------------
+# Intersection over union
+buffer<-st_read("D:/Wurzburg/Validation/kat_buffered.gpkg")
+
+buffer$area_kat<-st_area(buffer)
+
+# Compute intersection areas
+intersections <- st_intersection(silva_filtered, buffer) %>%
+  mutate(intersection_area = st_area(.))
+
+intersections$union_areas<- as.numeric(intersections$area)+as.numeric(intersections$area_kat)-as.numeric(intersections$intersection_area)
+
+intersections$iou_ttl<- intersections$intersection_area/intersections$union_areas
+
+intersections$kat_percent<-100*intersections$intersection_area / intersections$area_kat
+
+intersections$rs_percent<-100*intersections$intersection_area / intersections$area
+
+
+st_write(intersections, "D:/Wurzburg/Validation/intersections.shp")
+#-------------------------------------------------------------------------------
+
+
 

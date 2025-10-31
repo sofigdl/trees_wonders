@@ -1,6 +1,7 @@
 install.packages("pacman")
+
 #Install packages
-pacman::p_load(car, sf, terra, dplyr, ggplot2, RStoolbox, raster, rgeos, lidR, EBImage, caTools)
+pacman::p_load(car, sf, terra, dplyr, ggplot2, RStoolbox, raster, rgeos, lidR, EBImage, caTools, FNN)
 
 ################################################################################
 #                              Tree segmentation
@@ -187,7 +188,7 @@ plot(silva_filtered, add=TRUE)
 
 
 ################################################################################
-#                              Height
+#                                  Height
 ################################################################################
 
 pcth <- function(x, p=0.90, na.rm = TRUE) { quantile(x, p, na.rm = na.rm) }
@@ -206,7 +207,7 @@ silva_filtered$area <- st_area(silva_filtered)  # Automatically adds units (e.g.
 silva_filtered$perimeter <- st_length(st_cast(silva_filtered, "MULTILINESTRING"))
 
 ################################################################################
-#                              Diameter
+#                                  Diameter
 ################################################################################
 
 # Create centroids
@@ -278,7 +279,4 @@ centroids$max <- max_lengths
 silva_filtered$diam<-(centroids$mean*2)
 
 st_write(silva_filtered, "D:/Wurzburg/Segments/ringpark_1.shp")
-################################################################################
-
-
 
