@@ -6,7 +6,7 @@ pacman::p_load(vip, dplyr,sf,ggplot2, st, terra, exactextractr, ranger,
 #Cargar capas
 zensus<-vect("D:/3-Paper/Zensus_MR.gpkg")
 ext <- ext(zensus)
-r<-rast(ext, resolution = 100, crs = crs(zensus))
+r<-rast(ext, resolution = 100, crs = "EPSG:32632")
 grid <- as.polygons(r)
 grid$grid_id <- 1:nrow(grid)
 grid$cell_area <- expanse(grid, unit = "m")
@@ -14,17 +14,21 @@ grid$cell_area <- expanse(grid, unit = "m")
 ###############################################################################
 #                                   LST
 ###############################################################################
-LST20<-rast("D:/3-Paper/LST_D_2020-06-01_2020-09-01.tif")
+LST20<-rast("D:/3-Paper/2020-06-01_2020-09-01_Downscaled_LST_NoResiduals.tif")
 LST20 <- project(LST20, crs(grid))
-LST21<-rast("D:/3-Paper/LST_D_2021-06-01_2021-09-01.tif")
+LST21<-rast("D:/3-Paper/2021-06-01_2021-09-01_Downscaled_LST_NoResiduals.tif")
 LST21 <- project(LST21, crs(grid))
-LST22<-rast("D:/3-Paper/LST_D_2022-06-01_2022-09-01.tif")
+LST22<-rast("D:/3-Paper/2022-06-01_2022-09-01_Downscaled_LST_NoResiduals.tif")
 LST22 <- project(LST22, crs(grid))
-LST23<-rast("D:/3-Paper/LST_D_2023-06-01_2023-09-01.tif")
+LST23<-rast("D:/3-Paper/2023-06-01_2023-09-01_Downscaled_LST_NoResiduals.tif")
 LST23 <- project(LST23, crs(grid))
+LST24<-rast("D:/3-Paper/2024-06-01_2024-09-01_Downscaled_LST_NoResiduals.tif")
+LST24 <- project(LST24, crs(grid))
+LST25<-rast("D:/3-Paper/2025-06-01_2025-09-01_Downscaled_LST_NoResiduals.tif")
+LST25 <- project(LST25, crs(grid))
 
 # Stack the rasters
-LST_stack <- c(LST20, LST21, LST22, LST23)
+LST_stack <- c(LST20, LST21, LST22, LST23, LST24, LST25)
 
 # Compute the pixel-wise mean (ignore NAs)
 LST_mean <- app(LST_stack, fun = mean, na.rm = TRUE)
@@ -37,6 +41,10 @@ grid$mean_LST <- extract(LST_mean, grid, fun = mean, na.rm = TRUE)[,2]
 
 # Extract mean values considering fractional coverage
 grid$median_LST <- extract(LST_mean, grid, fun = median, na.rm = TRUE)[,2]
+
+
+
+##### At the end we find yearly anomalies/sensitivity of LST and modeling predicted LST with mean_LST
 
 
 ###############################################################################
@@ -91,6 +99,8 @@ grid$num_trees <- tree_metrics[match(grid$grid_id, tree_metrics$zone), 2]
 
 # Replace NA (cells with no trees) with 0
 grid$num_trees[is.na(grid$num_trees)] <- 0
+
+grid$t_ratio<-grid$num_trees/grid$cell_area
 
 ###Repeat with all the variables
 
@@ -208,13 +218,13 @@ grid$per_other[is.na(grid$per_other)] <- 0
 ###############################################################################
 #canopy<-vect("D:/Trees_data/Tree_segments_MR_LU.gpkg")
 canopy<-rast("D:/Classifications/2.2_trees_MR_nobuildings.tif")
+canopy[is.na(canopy)] <- 0
 #Calculate percentage of canopy cover
-canopy_area <- zonal(canopy, grid, fun = sum, na.rm = TRUE)
-cell_area <- res(canopy)[1] * res(canopy)[2]
-canopy_area$canopy_area <- canopy_area$`2.2_trees_MR_nobuildings` * cell_area
-grid$canopy_area <- canopy_area$canopy_area
-grid$canopy_area[is.na(grid$canopy_area)] <- 0
-grid$canopy_perc <- (grid$canopy_area / grid$cell_area) * 100
+grid_rast <- rasterize(grid, canopy, field = "grid_id")
+# 4. Calculate proportion of green pixels in each grid cell
+canopy_frac <- zonal(canopy, grid_rast, fun = "mean", na.rm = TRUE)
+grid$canopy_perc <- canopy_frac$`2.2_trees_MR_nobuildings`[match(grid$grid_id, canopy_frac$grid_id)] * 100
+grid$canopy_area <- (grid$canopy_perc / 100) * grid$cell_area
 
 
 # Mean nearest-neighbor distance for trees inside each cell 
@@ -247,18 +257,17 @@ grid$canopy_perc <- (grid$canopy_area / grid$cell_area) * 100
 
 green<-rast("D:/Classifications/1_vegetation_MR.tif")
 green <- project(green, "EPSG:32632")
-#green<-as.polygons(green)
-#Calculate percentage of canopy cover
-#green_in_grid <- intersect(grid, green)
-#green_in_grid$green_area <- expanse(green_in_grid, unit = "m") 
-green_frac <- exact_extract(green, grid, 'mean')
-green_fraction <- zonal(green, grid, fun = mean, na.rm = TRUE)
-cell_area <- res(green)[1] * res(green)[2]
-green_area$green_area <- green_area$layer * cell_area
-grid$green_area <- green_area$green_area
-grid$green_area[is.na(grid$green_area)] <- 0
-grid$green_perc <- (grid$green_area / grid$cell_area) * 100
 
+
+# 3. Rasterize grid so zonal() has a matching structure
+#grid_rast <- rasterize(grid, green, field = "grid_id")
+# 4. Calculate proportion of green pixels in each grid cell
+green_frac <- zonal(green, grid_rast, fun = "mean", na.rm = TRUE)
+
+grid$green_perc <- green_frac$layer[match(grid$grid_id, green_frac$grid_id)] * 100
+grid$green_perc[is.na(grid$green_perc)] <- 0
+grid$green_area <- (grid$green_perc / 100) * grid$cell_area
+grid$green_area[is.na(grid$green_area)] <- 0
 
 grid$veg<-grid$green_area - grid$canopy_area
 grid$veg_perc<-(grid$veg / grid$cell_area) * 100
@@ -282,6 +291,7 @@ grid$b_height_mean[is.na(grid$b_height_mean)] <- 0
 building_metrics <- zonal(buildings["area"], grid, fun = sum, na.rm = FALSE)
 grid$b_area_sum <- building_metrics[match(grid$grid_id, building_metrics$zone), 2]
 grid$b_area_sum[is.na(grid$b_area_sum)] <- 0
+grid$b_ratio<-grid$b_area_sum/grid$cell_area
 
 
 #Spacing between buildings
@@ -428,14 +438,26 @@ df <- na.omit(df)
 #"canopy_perc", "local_moran_I", "local_moran_p",                
 #"b_height_mean", "b_area_sum", "dist_water", "water_area", "water_perc", "veg")]
 
-df<-df[, c("mean_LST", "SVF", "ndvi19", "ndvi21", "num_trees", "CPA_mean", "t_height_mean",
-           "cd_mean", "num_acer", "per_acer", "num_tilia", "per_tilia", "num_robin", "per_robin",
-           "num_aesculus", "per_aesculus", "num_popul", "per_popul", "num_other", "per_other", 
-           "canopy_area", "canopy_perc", "green_area", "veg", "green_perc", "b_height_mean",
-           "b_area_sum", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water")]
+
+#Select variables and generate df
+
+#df<-df[, c("mean_LST", "SVF", #"ndvi19", "ndvi21",
+#           "num_trees", "CPA_mean", "t_height_mean",
+#           "cd_mean", "num_acer", "per_acer", "num_tilia", "per_tilia", "num_robin", "per_robin",
+#           "num_aesculus", "per_aesculus", "num_popul", "per_popul", "num_other", "per_other", 
+#           "canopy_area", "canopy_perc", "green_area", "veg", "green_perc", "b_height_mean",
+#           "b_area_sum", "mean_b_dist2",  "mean_b_dist1", "r_dens")]#, "dist_water")]
+
+df<-df[, c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
+           "cd_mean", "per_acer", "per_tilia", "per_robin",
+           "per_aesculus", "per_popul", "per_other", 
+           "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
+           "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens")]#, "dist_water")]
 
 
 set.seed(123)
+
+#Crossvalidation and regression model
 
 ctrl <- trainControl(method = "cv", number = 5)  # 5-fold CV
 
@@ -452,10 +474,10 @@ rf_fit <- train(
 # View results
 rf_fit
 plot(rf_fit)
-var_imp <- varImp(rf_cv, scale = TRUE)
+var_imp <- varImp(rf_fit, scale = TRUE)
 ggplot(var_imp, top = 15) +
   labs(title = "Variable Importance (Random Forest with Cross-Validation)",
-       x = "Importance", y = "")
+       x = "Variable", y = "Importance")
 
 #rf_fit <- ranger(
 #  formula = mean_LST ~ ., 
@@ -466,12 +488,17 @@ ggplot(var_imp, top = 15) +
 #  min.node.size = 5
 #)
 
+#Variable importance in %IncMSE
+importance(rf_fit$finalModel)
 
-vip(rf_cv, num_features = 15, aesthetics = list(fill = "darkgreen")) +
+vip(rf_fit, num_features = 15, aesthetics = list(fill = "darkgreen")) +
   labs(title = "Random Forest Variable Importance (Permutation)")
 
+###############################################################################
+#                          Partial Dependence Plots
+###############################################################################
 
-
+## Partial dependence plots
 
 # Wrap the model
 predictor <- Predictor$new(
@@ -481,55 +508,57 @@ predictor <- Predictor$new(
 )
 
 # Partial dependence for "num_trees"
-pdp_numtrees <- FeatureEffect$new(predictor, feature = "b_area_sum", method = "pdp")
-plot(pdp_numtrees)
+pdp_treeheight <- FeatureEffect$new(predictor, feature = "t_height_mean", method = "pdp")
+plot(pdp_treeheight)
 
+pdp_green <- FeatureEffect$new(predictor, feature = "green_perc", method = "pdp")
+plot(pdp_green)
 
+pdp_canopy <- FeatureEffect$new(predictor, feature = "canopy_perc", method = "pdp")
+plot(pdp_canopy)
 
-set.seed(123)
-rf_fit <- ranger(
-  formula = mean_LST ~ num_trees + dbh_mean + CPA_mean + t_height_mean + cd_mean +
-    bti_mean + cool_sh_mean + cool_tr_mean +
-    b_height_mean + dist_water + green_area + veg, 
-  data = df, 
-  importance = "permutation",  # or "impurity"
-  num.trees = 500,
-  mtry = floor(sqrt(ncol(df) - 1)),  # typical RF default
-  min.node.size = 5
-)
+pdp_build <- FeatureEffect$new(predictor, feature = "b_ratio", method = "pdp")
+plot(pdp_build)
 
+pdp_bdist <- FeatureEffect$new(predictor, feature = "mean_b_dist1", method = "pdp")
+plot(pdp_bdist)
 
-vip(rf_fit, num_features = 10, aesthetics = list(fill = "darkgreen")) +
-  labs(title = "Random Forest Variable Importance (Permutation)")
+pdp_veg <- FeatureEffect$new(predictor, feature = "veg_perc", method = "pdp")
+plot(pdp_veg)
 
 ###############################################################################
 #                                    GWR
 ###############################################################################
 # Remove rows with NA in LST or predictors
-vars <- c("mean_LST", "num_trees", "dbh_mean", "CPA_mean", "t_height_mean", "cd_mean",                 
-          "bti_mean", "cool_sh_mean", "cool_tr_mean", "canopy_area",                   
-          "canopy_perc", "local_moran_I", "local_moran_p",                
-          "b_height_mean", "b_area_sum", "dist_water", "water_area", "water_perc", "veg")
+vars <- c("mean_LST", "SVF", "t_ratio", "t_height_mean",
+           "cd_mean", "per_acer", "per_tilia",
+           "per_other", 
+           "green_perc", "canopy_perc",
+           "b_ratio",  "mean_b_dist1", "r_dens")
 
 grid_clean <- grid[complete.cases(as.data.frame(grid)[, vars]), ]
 
-# Check consistency
-nrow(grid_clean) == nrow(as.data.frame(grid_clean))  
 
+
+grid_clean <- grid_clean[ , c("mean_LST", "SVF", "t_ratio", "t_height_mean",
+                              "cd_mean", "per_acer", "per_tilia", "per_other", 
+                              "green_perc", "canopy_perc",
+                              "b_ratio",  "mean_b_dist1", "r_dens")]
 
 grid_sp <- as(grid_clean, "Spatial")
 
-bw <- bw.gwr(mean_LST ~ num_trees + dbh_mean + CPA_mean + t_height_mean + cd_mean +
-               bti_mean + cool_sh_mean + cool_tr_mean + canopy_area  + local_moran_I + 
-               b_height_mean + b_area_sum + dist_water + veg,
+bw <- bw.gwr(mean_LST ~ SVF + t_ratio + t_height_mean +
+             cd_mean + per_acer + per_tilia + per_other + 
+             green_perc + canopy_perc + b_ratio + mean_b_dist1 + r_dens,
              data = grid_sp,
              approach = "AICc",
              kernel = "bisquare",
              adaptive =TRUE)
 
-gwr_fit <- gwr.basic(mean_LST ~ num_trees + dbh_mean + CPA_mean + t_height_mean + cd_mean +
-                     bti_mean + cool_sh_mean + cool_tr_mean + canopy_area +  local_moran_I +
-                     b_height_mean + b_area_sum + dist_water + veg,
+
+gwr_fit <- gwr.basic(mean_LST ~  SVF + t_ratio + t_height_mean +
+                       cd_mean + per_acer + per_tilia + per_other + 
+                       green_perc + canopy_perc + b_ratio + mean_b_dist1 + r_dens,
                      data = grid_sp,
                      bw = bw,
                      kernel = "bisquare",
@@ -552,9 +581,6 @@ grid_clean$coef_dist_water  <- coef_df$dist_water
 grid_clean$coef_green_area  <- coef_df$green_area
 grid_clean$coef_veg         <- coef_df$veg
 grid_clean$local_R2 <- coef_df$Local_R2
-
-plot(grid_clean["local_R2"])
-
 
 
 ggplot(st_as_sf(grid_clean)) +
@@ -611,3 +637,95 @@ ggplot(st_as_sf(grid_clean)) +
   labs(title = "Local coefficient: Cooling by shading → LST",
        fill = "Coefficient")
 
+###############################################################################
+
+install.packages("SpatialML")
+library(SpatialML)
+
+grid_clean_noNA <- grid[df$grid_id, ]  # assuming each row has a unique ID column
+
+# Compute centroids of only the remaining cells
+grid_centroids <- centroids(grid_clean_noNA)
+
+# Extract coords
+coords <- crds(grid_centroids, df = TRUE)
+
+
+gwrf_model <- grf(
+  formula = mean_LST ~ SVF + t_ratio + CPA_mean + t_height_mean +
+    cd_mean + per_acer + per_tilia + per_robin + per_aesculus + per_popul + per_other +
+    canopy_perc + veg_perc+ green_perc+b_height_mean + b_ratio + mean_b_dist2+ mean_b_dist1+ r_dens,
+  dframe = df,
+  coords= coords,
+  bw = bw,          # spatial bandwidth (in meters)
+  kernel = "adaptive",
+  ntree = 500
+)
+
+
+# Predicted LST at each observation (grid cell)
+pred_LST <- gwrf_model$predictions
+
+# Add to your grid dataframe for mapping
+df$pred_LST <- pred_LST
+
+grid_clean_noNA$pred_LST <- pred_LST
+
+# Plot with terra
+plot(grid_clean_noNA["pred_LST"], main="Predicted LST from GWRF")
+
+
+grid_sf <- st_as_sf(grid_clean_noNA)
+ggplot(grid_sf) +
+  geom_sf(aes(fill = pred_LST)) +
+  scale_fill_viridis_c() +
+  labs(title="Predicted LST from GWRF") +
+  theme_minimal()
+
+
+var_imp_local <- gwrf_model$var.imp
+
+# For example, map importance of "green_area"
+df$green_imp <- var_imp_local[, "green_perc"]
+
+# Map it
+grid_clean_noNA$green_imp <- df$green_imp
+
+plot(grid_clean_noNA["green_imp"], main="Local importance of green_area")
+
+###############################################################################
+#                            LST sensitivity
+###############################################################################
+
+#sensitivity of each year
+
+sd_summer   <- app(LST_stack, fun = sd, na.rm = TRUE)
+
+anomalies <- LST_stack-LST_mean
+percent_change <- (LST_stack - LST_mean) / LST_mean * 100
+z_scores <- (LST_stack - LST_mean) / sd_summer
+
+cv_summer <- sd_summer / LST_mean 
+
+names(anomalies) <- paste0("anom_", 2020:2025)
+names(percent_change) <- paste0("pchg_", 2020:2025)
+names(z_scores) <- paste0("z_", 2020:2025)
+
+###############################################################################
+#                          Comparison of LST 
+###############################################################################
+
+
+df$LST_pred <- predict(rf_fit, newdata = df)
+
+ggplot(df, aes(x = mean_LST, y = LST_pred)) +
+  geom_point(alpha = 0.5, color = "steelblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "darkred", linetype = "dashed") +
+  geom_abline(slope = 1, intercept = 0, color = "black", linetype = "dotted") +
+  labs(x = "Observed mean LST (°C)",
+       y = "Modelled LST (°C)",
+       title = "Observed vs. Modelled Land Surface Temperature (Random Forest)") +
+  theme_minimal(base_size = 14)
+
+rmse_val <- rmse(df$mean_LST, df$LST_pred)
+r2_val <- cor(df$mean_LST, df$LST_pred)^2
