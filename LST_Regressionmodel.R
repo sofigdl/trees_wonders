@@ -377,9 +377,12 @@ grid$dist_water <- apply(dist_to_water, 1, min)
 #grid$water_area[is.na(grid$water_area)] <- 0
 #grid$water_perc <- (grid$water_area / grid$cell_area) * 100
 
+writeVector(grid, "D:/3-Paper/grid.gpkg")
 ###############################################################################
 #                            Regression
 ###############################################################################
+grid <- vect("D:/3-Paper/grid.gpkg")
+
 df <- as.data.frame(grid)
 # Remove all rows with NA in predictors or response
 df <- na.omit(df)
@@ -452,7 +455,7 @@ df<-df[, c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
            "cd_mean", "per_acer", "per_tilia", "per_robin",
            "per_aesculus", "per_popul", "per_other", 
            "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
-           "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens")]#, "dist_water")]
+           "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water")]#, "dist_water")]
 
 
 set.seed(123)
@@ -530,35 +533,36 @@ plot(pdp_veg)
 #                                    GWR
 ###############################################################################
 # Remove rows with NA in LST or predictors
-vars <- c("mean_LST", "SVF", "t_ratio", "t_height_mean",
-           "cd_mean", "per_acer", "per_tilia",
-           "per_other", 
-           "green_perc", "canopy_perc",
-           "b_ratio",  "mean_b_dist1", "r_dens")
+vars <- c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
+          "cd_mean", "per_acer", "per_tilia", "per_robin",
+          "per_aesculus", "per_popul", "per_other", 
+          "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
+          "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens")
 
 grid_clean <- grid[complete.cases(as.data.frame(grid)[, vars]), ]
 
 
+nrow(grid_clean) == nrow(as.data.frame(grid_clean)) 
 
-grid_clean <- grid_clean[ , c("mean_LST", "SVF", "t_ratio", "t_height_mean",
-                              "cd_mean", "per_acer", "per_tilia", "per_other", 
-                              "green_perc", "canopy_perc",
-                              "b_ratio",  "mean_b_dist1", "r_dens")]
+#grid_clean <- grid_clean[ , c("mean_LST", "SVF", "t_ratio", "t_height_mean",
+#                            cd_mean", "per_acer", "per_tilia", "per_other", 
+#                              "green_perc", "canopy_perc",
+#                              "b_ratio",  "mean_b_dist1", "r_dens")]
 
 grid_sp <- as(grid_clean, "Spatial")
 
-bw <- bw.gwr(mean_LST ~ SVF + t_ratio + t_height_mean +
-             cd_mean + per_acer + per_tilia + per_other + 
-             green_perc + canopy_perc + b_ratio + mean_b_dist1 + r_dens,
+bw <- bw.gwr(mean_LST ~ green_perc + b_ratio + mean_b_dist1 + 
+               t_height_mean + per_tilia + CPA_mean + #t_ratio + 
+               per_other + SVF + per_acer + b_height_mean + r_dens,
              data = grid_sp,
              approach = "AICc",
              kernel = "bisquare",
              adaptive =TRUE)
 
 
-gwr_fit <- gwr.basic(mean_LST ~  SVF + t_ratio + t_height_mean +
-                       cd_mean + per_acer + per_tilia + per_other + 
-                       green_perc + canopy_perc + b_ratio + mean_b_dist1 + r_dens,
+gwr_fit <- gwr.basic(mean_LST ~ green_perc + b_ratio + mean_b_dist1 + 
+                       t_height_mean + per_tilia + CPA_mean + #t_ratio + 
+                       per_other + SVF + per_acer + b_height_mean + r_dens,
                      data = grid_sp,
                      bw = bw,
                      kernel = "bisquare",
@@ -567,19 +571,18 @@ gwr_fit <- gwr.basic(mean_LST ~  SVF + t_ratio + t_height_mean +
 coef_df<- as.data.frame(gwr_fit$SDF)
 
 # Add local coefficients to your SpatVector grid
-grid_clean$coef_num_trees   <- coef_df$num_trees
-grid_clean$coef_dbh_mean    <- coef_df$dbh_mean
-grid_clean$coef_CPA_mean    <- coef_df$CPA_mean
-grid_clean$coef_t_height    <- coef_df$t_height_mean
-grid_clean$coef_cd_mean     <- coef_df$cd_mean
-grid_clean$coef_bti_mean    <- coef_df$bti_mean
-grid_clean$coef_cool_sh     <- coef_df$cool_sh_mean
-grid_clean$coef_cool_tr     <- coef_df$cool_tr_mean
-grid_clean$coef_b_height    <- coef_df$b_height_mean
-grid_clean$coef_b_area_sum    <- coef_df$b_area_sum
-grid_clean$coef_dist_water  <- coef_df$dist_water
-grid_clean$coef_green_area  <- coef_df$green_area
-grid_clean$coef_veg         <- coef_df$veg
+grid_clean$coef_t_ratio   <- coef_df$t_ratio
+grid_clean$coef_t_height  <- coef_df$t_height_mean
+grid_clean$coef_CPA_mean   <- coef_df$CPA_mean
+grid_clean$coef_b_ratio   <- coef_df$b_ratio
+grid_clean$coef_perc_acer <- coef_df$perc_acer
+grid_clean$coef_perc_tilia<- coef_df$perc_tilia
+grid_clean$coef_perc_other<- coef_df$perc_other
+grid_clean$coef_green_perc<- coef_df$green_perc
+grid_clean$coef_canopy_perc <- coef_df$canopy_perc
+grid_clean$coef_r_dens  <- coef_df$r_dens
+grid_clean$coef_SVF     <- coef_df$SVF
+grid_clean$coef_b_dist  <- coef_df$mean_b_dist1
 grid_clean$local_R2 <- coef_df$Local_R2
 
 
@@ -589,7 +592,7 @@ ggplot(st_as_sf(grid_clean)) +
   labs(title = "Local GWR R2")
 
 ggplot(st_as_sf(grid_clean)) +
-  geom_sf(aes(fill = coef_num_trees)) +
+  geom_sf(aes(fill = coef_t_ratio)) +
   scale_fill_gradient2(
     low = "#125CA6",mid = "#FFFFCC", high = "#BF4600"
   ) +
@@ -597,32 +600,32 @@ ggplot(st_as_sf(grid_clean)) +
        fill = "Coefficient")
 
 ggplot(st_as_sf(grid_clean)) +
-  geom_sf(aes(fill = coef_veg)) +
+  geom_sf(aes(fill = coef_t_height)) +
   scale_fill_gradient2(
     low = "#125CA6",mid = "#FFFFCC", high = "#BF4600"
   ) +
-  labs(title = "Local coefficient: Other vegetation density → LST",
+  labs(title = "Local coefficient: Mean tree height → LST",
        fill = "Coefficient")
 
 ggplot(st_as_sf(grid_clean)) +
-  geom_sf(aes(fill = coef_b_height)) +
+  geom_sf(aes(fill = coef_b_ratio)) +
   scale_fill_gradient2(
     low = "#125CA6",mid = "#FFFFCC", high = "#BF4600"
   ) +
-  labs(title = "Local coefficient: Mean building height → LST",
+  labs(title = "Local coefficient: Building density → LST",
        fill = "Coefficient")
 
 
 ggplot(st_as_sf(grid_clean)) +
-  geom_sf(aes(fill = coef_b_area_sum)) +
+  geom_sf(aes(fill = coef_CPA_mean)) +
   scale_fill_gradient2(
     low = "#125CA6",mid = "#FFFFCC", high = "#BF4600"
   ) +
-  labs(title = "Local coefficient: Building footprint → LST",
+  labs(title = "Local coefficient: Mean CPA → LST",
        fill = "Coefficient")
 
 ggplot(st_as_sf(grid_clean)) +
-  geom_sf(aes(fill = coef_cool_tr)) +
+  geom_sf(aes(fill = coef_perc_acer)) +
   scale_fill_gradient2(
     low = "#125CA6",mid = "#FFFFCC", high = "#BF4600"
   ) +
@@ -630,7 +633,23 @@ ggplot(st_as_sf(grid_clean)) +
        fill = "Coefficient")
 
 ggplot(st_as_sf(grid_clean)) +
-  geom_sf(aes(fill = coef_cool_sh)) +
+  geom_sf(aes(fill = coef_perc_tilia)) +
+  scale_fill_gradient2(
+    low = "#125CA6",mid = "#FFFFCC", high = "#BF4600"
+  ) +
+  labs(title = "Local coefficient: Cooling by shading → LST",
+       fill = "Coefficient")
+
+ggplot(st_as_sf(grid_clean)) +
+  geom_sf(aes(fill = coef_perc_other)) +
+  scale_fill_gradient2(
+    low = "#125CA6",mid = "#FFFFCC", high = "#BF4600"
+  ) +
+  labs(title = "Local coefficient: Cooling by shading → LST",
+       fill = "Coefficient")
+
+ggplot(st_as_sf(grid_clean)) +
+  geom_sf(aes(fill = coef_green_perc)) +
   scale_fill_gradient2(
     low = "#125CA6",mid = "#FFFFCC", high = "#BF4600"
   ) +
@@ -642,24 +661,33 @@ ggplot(st_as_sf(grid_clean)) +
 install.packages("SpatialML")
 library(SpatialML)
 
-grid_clean_noNA <- grid[df$grid_id, ]  # assuming each row has a unique ID column
-
+grid_clean_noNA <- grid[complete.cases(as.data.frame(grid)[, vars]), ]
+grid_clean_noNA <- grid_clean_noNA <- grid_clean_noNA[ , c("mean_LST", "SVF", "t_ratio", "t_height_mean",
+                                                 "cd_mean", "per_acer", "per_tilia", "per_other", 
+                                                 "green_perc", "canopy_perc",
+                                                 "b_ratio",  "mean_b_dist1", "r_dens")]
+grid_df<-as.data.frame(grid_clean_noNA)
 # Compute centroids of only the remaining cells
 grid_centroids <- centroids(grid_clean_noNA)
 
 # Extract coords
 coords <- crds(grid_centroids, df = TRUE)
 
-
+bwrf<-grf.bw(formula = mean_LST ~ SVF + t_ratio + t_height_mean +
+               cd_mean + per_acer + per_tilia + per_other + 
+               green_perc + canopy_perc + b_ratio + mean_b_dist1 + r_dens,
+             dataset = grid_df,
+             coords = coords)
+  
+  
 gwrf_model <- grf(
-  formula = mean_LST ~ SVF + t_ratio + CPA_mean + t_height_mean +
-    cd_mean + per_acer + per_tilia + per_robin + per_aesculus + per_popul + per_other +
-    canopy_perc + veg_perc+ green_perc+b_height_mean + b_ratio + mean_b_dist2+ mean_b_dist1+ r_dens,
-  dframe = df,
+  formula = mean_LST ~ SVF + t_ratio + t_height_mean +
+    cd_mean + per_acer + per_tilia + per_other + 
+    green_perc + canopy_perc + b_ratio + mean_b_dist1 + r_dens,
+  dframe = grid_df,
   coords= coords,
-  bw = bw,          # spatial bandwidth (in meters)
-  kernel = "adaptive",
-  ntree = 500
+  bw = bwrf$best.bw,          # spatial bandwidth (in meters)
+  kernel = "adaptive"
 )
 
 
