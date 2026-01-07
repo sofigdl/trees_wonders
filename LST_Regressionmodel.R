@@ -1,7 +1,7 @@
 # Load Libraries
 pacman::p_load(vip, dplyr,sf,ggplot2, st, terra, exactextractr, ranger,
                landscapemetrics, spdep, FNN, car, MASS, glmnet, spdep, 
-               caret, GWmodel, iml, osmdata, randomForest)
+               caret, GWmodel, iml, osmdata, randomForest, rsample, purrr)
 
 ###############################################################################
 #                                   LST
@@ -282,17 +282,22 @@ buildings<-vect("C:/Users/ang58gl/Documents/Data/buildings_MR.gpkg")
 project(buildings, crs(grid))
 buildings <- makeValid(buildings)
 buildings_single <- disagg(buildings)
-g <- geom(buildings_single)
-geom_hash <- tapply(
-  paste(round(g[, "x"], 5), round(g[, "y"], 5)),
-  g[, "geom"], # group by geometry ID
-  paste, collapse = "_"
-)
+buildings_single <- buildings_single[, c("_id", "building", "building_levels", "roof_shape")]
+#g <- geom(buildings_single)
+#geom_hash <- tapply(
+#  paste(round(g[, "x"], 5), round(g[, "y"], 5)),
+#  g[, "geom"], # group by geometry ID
+#  paste, collapse = "_"
+#)
 
-dup_idx <- duplicated(geom_hash)
+# Extract geometry as WKT strings
+g_wkt <- geom(buildings_single, wkt = TRUE)
+
+# Identify duplicate geometries
+dup_idx <- duplicated(g_wkt)
+
+#dup_idx <- duplicated(geom_hash)
 buildings_clean <- subset(buildings_single, !dup_idx)
-
-buildings_clean <- buildings_clean[, c("_id", "building", "building_levels", "roof_shape")]
 
 
 #Building area
@@ -340,8 +345,8 @@ grid$mean_b_dist2[is.na(grid$mean_b_dist2)] <- 250
 
 #Method 2
 # Rasterize buildings (1 = built, NA = not built)
-r <- rast(buildings, res = 1)  # adjust resolution
-build_r <- rasterize(buildings, r, field = 1)
+r <- rast(buildings_clean, res = 1)  # adjust resolution
+build_r <- rasterize(buildings_clean, r, field = 1)
 
 # Compute Euclidean distance from each pixel to the nearest building
 dist_r <- distance(build_r)
@@ -386,7 +391,7 @@ roads_in_grid$length_m <-perim(roads_in_grid)
 road_density <- as.data.frame(aggregate(roads_in_grid, by = "grid_id", fun = sum))
 names(road_density)
 #road_density <- zonal(roads_in_grid["length_m"], grid, fun = sum, na.rm = TRUE)
-grid$r_length <- road_density[match(grid$grid_id, road_density$grid_id), 32]
+grid$r_length <- road_density[match(grid$grid_id, road_density$grid_id), "agg_length_m"]
 grid$r_length[is.na(grid$r_length)] <-0
 grid$r_dens <- grid$r_length/grid$cell_area
 grid$r_dens[is.na(grid$r_dens)] <-0
@@ -395,7 +400,7 @@ grid$r_dens[is.na(grid$r_dens)] <-0
 ###############################################################################
 
 water<-vect("D:/3-Paper/Water_1.gpkg")
-grid_centroids <- centroids(grid)
+#grid_centroids <- centroids(grid)
 
 # Calculate distance from each centroid to the water bodies
 dist_to_water <- distance(grid_centroids, water)
@@ -409,7 +414,174 @@ grid$dist_water <- apply(dist_to_water, 1, min)
 #grid$water_area[is.na(grid$water_area)] <- 0
 #grid$water_perc <- (grid$water_area / grid$cell_area) * 100
 
-#writeVector(grid, "D:/3-Paper/grid.gpkg")
+#writeVector(grid, "D:/3-Paper/grid_10m.gpkg")
+
+###############################################################################
+#                       Subsampling and Regression
+###############################################################################
+grid <- vect("D:/3-Paper/grid_10m.gpkg")
+
+grid_sf<-st_as_sf(grid)
+grid_sf <- na.omit(grid_sf)
+
+# Random sample n rows
+set.seed(42)
+n <- 6088
+sample_idx <- sample(nrow(grid_sf), n)
+grid_sub <- grid_sf[sample_idx, ]
+
+
+#---------------------------------------------------------------------------------
+#Clustering
+vars <- c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
+          "cd_mean", "per_acer", "per_tilia", "per_other", "per_robin", "per_aesculus",
+          "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
+          "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water", "dist_tr")
+X <- scale(st_drop_geometry(grid_sf)[, vars])
+km <- kmeans(X, centers = 40, nstart = 40)
+grid_sf$cluster <- km$cluster
+# sample 1 per cluster
+grid_rep <- grid_sf %>% group_by(cluster) %>% sample_frac(0.01, replace=FALSE) %>% ungroup()
+
+
+#---------------------------------------------------------------------------------
+
+# Stratified by species
+
+
+# species proportion column names
+species_cols <- c("per_tilia", "per_acer", "per_aesculus",
+                  "per_robin", "per_popul", "per_other")
+
+df <- st_drop_geometry(grid_sf)  # or your cleaned data frame
+
+# assign dominant species (string)
+df$dominant_species <- species_cols[apply(df[, species_cols], 1, which.max)]
+
+set.seed(42)
+n_per_species <- 400   # choose depending on computing power
+
+grid_sub_species <- df %>%
+  group_by(dominant_species) %>%
+  slice_sample(prop=0.25) %>%
+  ungroup()
+
+#-------------------------------------------------------------------------------
+#Random sampling -  Crossvalidation and regression model
+df_sub<-as.data.frame(grid_sub)
+df_sub<-df_sub[, c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
+           "cd_mean", "per_acer", "per_tilia", "per_other", "per_robin", "per_aesculus",
+           "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
+           "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water", "dist_tr")]
+
+ctrl <- trainControl(method = "cv", number = 5)  # 5-fold CV
+
+# Fit Random Forest with CV
+rf_fit <- train(
+  mean_LST ~ .,
+  data = df_sub,
+  method = "rf",
+  type="regression",
+  trControl = ctrl,
+  tuneLength = 5,
+  importance=TRUE)
+
+# View results
+rf_fit
+
+var_imp <- varImp(rf_fit, scale = FALSE)
+ggplot(var_imp, top = 15) +
+  labs(title = "Variable Importance (Random Forest with Cross-Validation)",
+       x = "Variable", y = "Importance")
+#---------------------------------------------------------------------------------
+#Cluster sampling -  Cross-validation and regression model
+
+#Cross-validation and regression model
+df_rep<-as.data.frame(grid_rep)
+df_rep<-df_rep[, c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
+                   "cd_mean", "per_acer", "per_tilia", "per_other", "per_robin", "per_aesculus",
+                   "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
+                   "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water", "dist_tr")]
+
+ctrl <- trainControl(method = "cv", number = 5)  # 5-fold CV
+
+# Fit Random Forest with CV
+rf_rep <- train(
+  mean_LST ~ .,
+  data = df_rep,
+  method = "rf",
+  type="regression",
+  trControl = ctrl,
+  tuneLength = 5,
+  importance=TRUE)
+
+# View results
+rf_rep
+
+var_imp <- varImp(rf_rep, scale = FALSE)
+ggplot(var_imp, top = 15) +
+  labs(title = "Variable Importance (Random Forest with Cross-Validation)",
+       x = "Variable", y = "Importance")
+
+install.packages("rsample")
+library(rsample)
+
+# 5-fold CV splits
+folds <- vfold_cv(df_rep, v = 5)
+
+# Function to train ranger model on one fold
+fit_ranger <- function(split) {
+  ranger(
+    mean_LST ~ .,
+    data = analysis(split),
+    mtry = floor(sqrt(ncol(df_rep) - 1)),
+    num.trees = 500,
+    importance = "permutation",
+    keep.inbag = TRUE
+  )
+}
+
+# Train models for all folds
+models <- map(folds$splits, fit_ranger)
+
+rmse_values <- map2_dbl(models, folds$splits, function(model, split) {
+  test_data <- assessment(split)
+  preds <- predict(model, data = test_data)$predictions
+  truth <- test_data$mean_LST
+  sqrt(mean((preds - truth)^2))
+})
+
+
+rmse_values
+mean(rmse_values)
+
+#Extract importance from each model
+importance_list <- map(models, ~ .x$variable.importance)
+
+# Convert to a data frame
+importance_df <- map_df(
+  importance_list,
+  ~ tibble(variable = names(.x), importance = as.numeric(.x)),
+  .id = "fold"
+)
+
+
+importance_summary <- importance_df %>%
+  group_by(variable) %>%
+  summarise(mean_importance = mean(importance, na.rm = TRUE)) %>%
+  arrange(desc(mean_importance))
+
+ggplot(importance_summary, aes(x = reorder(variable, mean_importance),
+                               y = mean_importance)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    x = "Predictor",
+    y = "Mean Importance (permutation)",
+    title = "Random Forest Variable Importance (Cross-Validated)"
+  ) +
+  theme_minimal(base_size = 18)
+
 ###############################################################################
 #                            Regression
 ###############################################################################
