@@ -82,16 +82,31 @@ grid$SVF <- terra::extract(svf, grid, fun = mean)[2]
 ###############################################################################
 #                                   Trees
 ###############################################################################
+grid<-vect("D:/3-Paper/grid_100m.gpkg")
 tree_points<-vect("D:/Simulations/trees_32632.gpkg")
 
 ##Number of trees
-# Add a dummy column to count
-tree_int <- intersect(tree_points, grid)
+tree_int <- terra::intersect(tree_points, grid_100)
 
 # Aggregate by summing the dummy column = point count
-tree_metrics <- aggregate(tree_int, fun = mean, by= "grid_id", count = TRUE)
+tree_metrics <- terra::aggregate(tree_int, 
+                                 by = "grid_id",
+                                 fun = mean,
+                                 count = TRUE)
+
 tree_metrics <- as.data.frame(tree_metrics)
-tree_metrics <- tree_metrics[, c("grid_id","agg_dbh", "agg_height", "agg_cd", "agg_CPA", "agg_LAI", "agg_n", "species")]
+colnames(tree_metrics)[colnames(tree_metrics) == "agg_eta.(tot)"] <- "ETA_tot"
+#tree_metrics <- tree_metrics[, c("grid_id","agg_dbh", "agg_height", "agg_cd", "agg_CPA", "agg_LAI", "agg_n", "species")]
+
+tree_metrics <- tree_metrics[, c("grid_id", "agg_LAI", "ETA_tot")]
+
+grid_100 <- merge(grid_100, tree_metrics, by = "grid_id", all.x = TRUE)
+
+grid_100$agg_LAI[is.na(grid_100$agg_LAI)] <-0
+
+
+grid_100$ETA_tot[is.na(grid_100$ETA_tot)] <-0
+
 
 # Join the results back to the full grid
 grid$num_trees <- tree_metrics[match(grid$grid_id, tree_metrics$grid_id), 7]
@@ -414,21 +429,72 @@ grid$dist_water <- apply(dist_to_water, 1, min)
 #grid$water_area[is.na(grid$water_area)] <- 0
 #grid$water_perc <- (grid$water_area / grid$cell_area) * 100
 
-#writeVector(grid, "D:/3-Paper/grid_10m.gpkg")
+#writeVector(grid, "D:/3-Paper/grid_100m.gpkg")
 
 ###############################################################################
 #                       Subsampling and Regression
 ###############################################################################
-grid <- vect("D:/3-Paper/grid_10m.gpkg")
+grid <- st_read("D:/3-Paper/grid_10m.gpkg")
 
-grid_sf<-st_as_sf(grid)
-grid_sf <- na.omit(grid_sf)
+grid_sf <- na.omit(grid)
+
+# Random sample n rows
+#set.seed(42)
+#n <- 6088
+#sample_idx <- sample(nrow(grid_sf), n)
+#grid_sub <- grid_sf[sample_idx, ]
 
 # Random sample n rows
 set.seed(42)
-n <- 6088
-sample_idx <- sample(nrow(grid_sf), n)
-grid_sub <- grid_sf[sample_idx, ]
+#n <- 60882
+#sample_idx <- sample(nrow(grid_sf), n)
+grid_sub <- grid_sf[,c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
+                       "cd_mean", "per_acer", "per_tilia", "per_other", "per_robin", "per_aesculus",
+                       "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
+                       "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water", "dist_tr") ]
+grid_sub <- st_drop_geometry(grid_sub)
+
+
+K <- 5
+folds <- sample(rep(1:K, length.out = nrow(grid_sub)))
+
+cv_rmse <- numeric(K)
+imp_list <- vector("list", K)
+
+for (k in 1:K) {
+  
+  train <- grid_sub[folds != k, ] 
+  valid <- grid_sub[folds == k, ] 
+  
+  rf <- ranger(
+    mean_LST ~ .,
+    data = train,
+    num.trees = 300,
+    min.node.size = 5,
+    importance = "permutation",   
+    num.threads = 1               
+  )
+  
+  pred <- predict(rf, valid)$predictions
+  cv_rmse[k] <- sqrt(mean((valid$mean_LST - pred)^2))
+  
+  imp_list[[k]] <- rf$variable.importance
+}
+
+imp_mat <- do.call(cbind, imp_list)
+
+imp_mean <- rowMeans(imp_mat)
+imp_sd   <- apply(imp_mat, 1, sd)
+
+imp_cv <- data.frame(
+  variable = rownames(imp_mat),
+  mean_imp = imp_mean,
+  sd_imp   = imp_sd
+)
+
+imp_cv <- imp_cv[order(-imp_cv$mean_imp), ]
+head(imp_cv)
+
 
 
 #---------------------------------------------------------------------------------
@@ -438,10 +504,10 @@ vars <- c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
           "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
           "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water", "dist_tr")
 X <- scale(st_drop_geometry(grid_sf)[, vars])
-km <- kmeans(X, centers = 40, nstart = 40)
+km <- kmeans(X, centers = 40, nstart = 20)
 grid_sf$cluster <- km$cluster
 # sample 1 per cluster
-grid_rep <- grid_sf %>% group_by(cluster) %>% sample_frac(0.01, replace=FALSE) %>% ungroup()
+grid_rep <- grid_sf %>% group_by(cluster) %>% sample_frac(0.5, replace=FALSE) %>% ungroup()
 
 
 #---------------------------------------------------------------------------------
@@ -458,13 +524,59 @@ df <- st_drop_geometry(grid_sf)  # or your cleaned data frame
 # assign dominant species (string)
 df$dominant_species <- species_cols[apply(df[, species_cols], 1, which.max)]
 
-set.seed(42)
-n_per_species <- 400   # choose depending on computing power
+n_per_species <- 4000   # choose depending on computing power
 
 grid_sub_species <- df %>%
   group_by(dominant_species) %>%
   slice_sample(prop=0.25) %>%
   ungroup()
+
+grid_sub_species$dominant_species <-
+  as.factor(grid_sub_species$dominant_species)
+
+grid_sub_species<-as.data.frame(grid_sub_species)
+
+df_rep <- grid_sub_species[,c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
+                       "cd_mean", "dominant_species", "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
+                       "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water", "dist_tr") ]
+
+K <- 5
+folds <- sample(rep(1:K, length.out = nrow(df_rep)))
+
+cv_rmse <- numeric(K)
+imp_list <- vector("list", K)
+
+for (k in 1:K) {
+  
+  train <- df_rep[folds != k, ] 
+  valid <- df_rep[folds == k, ] 
+  
+  rf <- ranger(
+    mean_LST ~ .,
+    data = train,
+    num.trees = 300,
+    min.node.size = 5,
+    importance = "permutation",   
+    num.threads = 1               
+  )
+  
+  pred <- predict(rf, valid)$predictions
+  cv_rmse[k] <- sqrt(mean((valid$mean_LST - pred)^2))
+  
+  imp_list[[k]] <- rf$variable.importance
+}
+
+imp_mat <- do.call(cbind, imp_list)
+
+imp_mean <- rowMeans(imp_mat)
+imp_sd   <- apply(imp_mat, 1, sd)
+
+imp_cv <- data.frame(
+  variable = rownames(imp_mat),
+  mean_imp = imp_mean,
+  sd_imp   = imp_sd
+)
+
 
 #-------------------------------------------------------------------------------
 #Random sampling -  Crossvalidation and regression model
@@ -503,20 +615,46 @@ df_rep<-df_rep[, c("mean_LST", "SVF", "t_ratio", "CPA_mean", "t_height_mean",
                    "canopy_perc", "veg_perc", "green_perc", "b_height_mean",
                    "b_ratio", "mean_b_dist2",  "mean_b_dist1", "r_dens", "dist_water", "dist_tr")]
 
-ctrl <- trainControl(method = "cv", number = 5)  # 5-fold CV
+K <- 5
+folds <- sample(rep(1:K, length.out = nrow(df_rep)))
 
-# Fit Random Forest with CV
-rf_rep <- train(
-  mean_LST ~ .,
-  data = df_rep,
-  method = "rf",
-  type="regression",
-  trControl = ctrl,
-  tuneLength = 5,
-  importance=TRUE)
+cv_rmse <- numeric(K)
+imp_list <- vector("list", K)
 
-# View results
-rf_rep
+for (k in 1:K) {
+  
+  train <- df_rep[folds != k, ] 
+  valid <- df_rep[folds == k, ] 
+  
+  rf <- ranger(
+    mean_LST ~ .,
+    data = train,
+    num.trees = 300,
+    min.node.size = 5,
+    importance = "permutation",   
+    num.threads = 1               
+  )
+  
+  pred <- predict(rf, valid)$predictions
+  cv_rmse[k] <- sqrt(mean((valid$mean_LST - pred)^2))
+  
+  imp_list[[k]] <- rf$variable.importance
+}
+
+imp_mat <- do.call(cbind, imp_list)
+
+imp_mean <- rowMeans(imp_mat)
+imp_sd   <- apply(imp_mat, 1, sd)
+
+imp_cv <- data.frame(
+  variable = rownames(imp_mat),
+  mean_imp = imp_mean,
+  sd_imp   = imp_sd
+)
+
+imp_cv <- imp_cv[order(-imp_cv$mean_imp), ]
+head(imp_cv)
+
 
 var_imp <- varImp(rf_rep, scale = FALSE)
 ggplot(var_imp, top = 15) +

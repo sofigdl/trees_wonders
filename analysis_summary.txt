@@ -1,0 +1,24 @@
+COOLING EFFECT ANALYSIS SUMMARY (n = 173)
+========================================
+
+DESCRIPTIVE STATISTICS:
+LST cooling:  1.91 ± 2 °C
+Tair cooling:  0.58 ± 0.79 °C
+Difference:  1.33 °C
+
+CORRELATION:
+Pearson r =  0.399 , p =  5.62e-08 
+Spearman ρ =  0.397 , p =  6.3e-08 
+✓ Significant correlation between LST and Tair cooling
+
+PAIRED COMPARISON:
+Wilcoxon signed-rank test p-value =  3.26e-15 
+Cohen's d =  0.725  ( medium )
+✓ Significant difference between LST and Tair cooling
+
+REGRESSION:
+R² =  0.159 
+Slope =  1.013  (not different from 1:1) 
+
+SEASONAL EFFECTS:
+✓ LST cooling differs significantly by season (p =  8.18e-08 )
